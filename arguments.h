@@ -1,6 +1,7 @@
 #ifndef ARGUMENTS_H
 #define ARGUMENTS_H
 
+#include <stdint.h>
 #include <argp.h>
 
 
@@ -14,7 +15,8 @@ struct arguments
   double re_max;
   double im_min;
   double im_max;
-  
+  uint64_t *iter;
+  double bail;
   
 };
 
@@ -24,8 +26,8 @@ enum keys
   {
     k_size=256,
     k_window,
-    k_iterMin,
-    k_iterMax
+    k_iter,
+    k_bail
   };
 
 #endif

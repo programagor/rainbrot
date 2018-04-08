@@ -1,6 +1,9 @@
 #include <argp.h>
+#include <stdlib.h>
+#include <stdint.h>
 
 #include "arguments.h"
+#include "csv_parse.h"
 
 /*
   OPTIONS.  Field 1 in ARGP
@@ -8,9 +11,11 @@
 */
 static struct argp_option options[] =
 {
-  {"verbose",'v',0,0,"Produce verbose output"},
-  {"size",k_size,"WIDTHxHEIGHT",0,"Size of image in pixels"},
-  {"window",k_window,"RE_MIN,IM_MIN,RE_MAX,IM_MAX",0,"Displayed area of the Gauss plane"},
+  {"verbose",'v',0,0,"Produce verbose output",-2},
+  {"size",k_size,"WIDTHxHEIGHT",0,"Size of image in pixels",1},
+  {"window",k_window,"RE_MIN,IM_MIN,RE_MAX,IM_MAX",0,"Displayed area of the Gauss plane",1},
+  {"iter",k_iter,"ITER1,ITER2[,...]",0,"Bands of iteration depths",1},
+  {"bail",k_bail,"BAILOUT",0,"Maximal absolute value, which will cause a point to be discarded after reaching it"},
   {0}
 };
 
@@ -40,6 +45,19 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
 		 &(arguments->im_min),
 		 &(arguments->re_max),
 		 &(arguments->im_max)))
+      argp_usage(state);
+    break;
+  case k_iter:
+    arguments->iter=csv_parse_row(arg);
+    if(!arguments->iter||!arguments->iter[0]||!arguments->iter[1])
+      {
+	free(arguments->iter);
+	argp_usage(state);
+      }
+    break;
+  case k_bail:
+    if(1!=sscanf(arg,"%lf",
+		 &(arguments->bail)))
       argp_usage(state);
     break;
   case ARGP_KEY_ARG:
