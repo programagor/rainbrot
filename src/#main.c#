@@ -13,6 +13,9 @@
 #include "arguments.h"
 #include "csv_parse.h"
 
+
+#define STR_MAXLEN 80
+
 int main (int argc,char** argv)
 {
 struct arguments args;
@@ -40,8 +43,9 @@ if(!args.iter)
 
 /* Prepare output files */
 /* Folder first */
-char dirname[80];
-snprintf(dirname,80,"rain_%dx%d(%lf+%lfi_%lf+%lfi)-%lf",
+char dirname[STR_MAXLEN];
+dirname[STR_MAXLEN-1]='\0';
+snprintf(dirname,STR_MAXLEN-1,"%d_%dx%d(%lf+%lfi_%lf+%lfi)-%lf",
 	    args.re_size,
 	    args.im_size,
 	    args.re_min,
@@ -68,14 +72,16 @@ else if((st.st_mode & S_IFMT) != S_IFDIR)
 else
 {
   if(v)
-    fprintf(stdout,"Entering directory\n");
+    fprintf(stdout,"Directory already exists, entering\n");
 }
 
 if(v)
   fprintf(stdout,"Initialising files\n");
 
+/* Start creating files, and make an array of handles to the files */
 
-
+ if(v)
+   fprintf(stdout,"Task done, quitting\n");
 /* Clean up */
 free(args.iter);
 

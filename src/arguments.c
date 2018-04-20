@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 #include "arguments.h"
-#include "csv_parse.h"
+#include <csv_parse.h>
 
 /*
   OPTIONS.  Field 1 in ARGP
