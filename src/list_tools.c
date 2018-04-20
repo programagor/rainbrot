@@ -41,7 +41,7 @@ void sort_list(uint64_t* list)
 {
   /* Find list length */
   unsigned int l;
-  for(l=0;list[l];l++);
+  for(l=2;list[l];l++);
 
   /* Replace duplicates with zeros */
   for(unsigned int a=0;a<l-1;a++)

@@ -9,8 +9,8 @@ struct arguments
 {
   char *args[1];
   int verbose;
-  unsigned int re_size;
-  unsigned int im_size;
+  uint32_t re_size;
+  uint32_t im_size;
   double re_min;
   double re_max;
   double im_min;

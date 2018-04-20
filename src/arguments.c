@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 #include "arguments.h"
-#include <csv_parse.h>
+#include "list_tools.h"
 
 /*
   OPTIONS.  Field 1 in ARGP
@@ -34,7 +34,7 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
     arguments->verbose = 1;
     break;
   case k_size:
-    if(2!=sscanf(arg,"%dx%d",
+    if(2!=sscanf(arg,"%ux%u",
 		 &(arguments->re_size),
 		 &(arguments->im_size)))
       argp_usage(state);
@@ -49,11 +49,13 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
     break;
   case k_iter:
     arguments->iter=csv_parse_row(arg);
+    /* If we don't have at least 2 valid values, quit */
     if(!arguments->iter||!arguments->iter[0]||!arguments->iter[1])
       {
 	free(arguments->iter);
 	argp_usage(state);
       }
+    sort_list(arguments->iter);
     break;
   case k_bail:
     if(1!=sscanf(arg,"%lf",
