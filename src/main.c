@@ -8,6 +8,10 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <fcntl.h>
+
+/* Memory management */
+#include <sys/mman.h>
 
 
 #include "arguments.h"
@@ -81,30 +85,15 @@ int main (int argc,char** argv)
   /* How many files? */
   unsigned int l;
   for(l=2;args.iter[l+1];l++);
-  /* Create array of file pointers */
-  FILE **files=calloc( l, sizeof(FILE*) );
-
-  if(v)
-    fprintf(stdout,"Initialising canvas arrays... ");
-  /* Create canvas arrays */
-  uint64_t ***canvas=calloc(l,sizeof(uint64_t**));//[l][args.re_size][args.im_size];
-  for(unsigned int i=0;i<l;i++)
-    {
-      canvas[i]=calloc(args.re_size,sizeof(uint64_t*));
-      for(uint32_t x=0;x<args.re_size;x++)
-	{
-	  canvas[i][x]=calloc(args.im_size,sizeof(uint64_t));
-	}
-    }
-  
-  if(v)
-    fprintf(stdout,"done\n");
-
 
   if(v)
     fprintf(stdout,"Initialising files:\n");
   
   /* Map individual files */
+  off_t fsize = (off_t)(sizeof(uint64_t))*args.re_size*args.im_size;
+  int files[l];
+  uint64_t *maps[l];
+  
   for(unsigned int i=0; args.iter[i+1]; i++)
     {
       char fname[STR_MAXLEN];
@@ -118,34 +107,31 @@ int main (int argc,char** argv)
       if(stat(fpath,&st)==-1) /* File does not exist */
 	{
 	  /* Create file */
-	  files[i]=fopen(fpath,"wb");
-	  for(uint32_t x=0;x<args.re_size;x++)
+	  files[i]=open(fpath,O_RDWR|O_CREAT,S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
+	  uint64_t *zeros=calloc(args.im_size,sizeof(uint64_t)); /* Get string full of zeros, to write into file in batches */
+	  for(uint64_t x=0;x<args.re_size;x++)
 	    {
-	      for(uint32_t y=0;y<args.im_size;y++)
-		{
-		  /* Fill new file and canvas with zeros */
-		  canvas[i][x][y]=0;
-		}
-	      fwrite(canvas[i][x],sizeof(uint64_t),args.im_size,files[i]);
+	      write(files[i],zeros,args.im_size*sizeof(uint64_t)); /* Create file of the right size, full of zeros */
 	    }
-	  fflush(files[i]);
+	  free(zeros);
 	  if(v)
 	    fprintf(stdout,"created.\n");
 	}
-      else if((st.st_mode & S_IFMT) == S_IFREG) /* It exists, and is a regular file of the right size */
+      else if((st.st_mode & S_IFMT) == S_IFREG) /* It exists */
 	{
 	  fprintf(stdout,"exists, ");
-	  if(st.st_size != (off_t)(sizeof(uint64_t))*args.re_size*args.im_size)
+	  if(st.st_size != fsize) /* but has the wrong size */
 	    {
 	      if(v)
 		fprintf(stdout,"corrupted, erasing.\n");
 	      fprintf(stderr,"File %s has unexpected size. Erasing... ",fname);
-	      remove(fpath);
+	      remove(fpath); /* delete file */
 	      fprintf(stderr,"done.\n");
-	      i--;
+	      i--; /* Retry */
 	    }
 	    else{
-	      files[i]=fopen(fpath,"rb");
+	      /* File exists and is of the right size */
+	      files[i]=open(fpath,O_RDWR);
 	      if(v)
 		fprintf(stdout,"accessed.\n");
 	    }
@@ -157,13 +143,24 @@ int main (int argc,char** argv)
 	  fprintf(stderr,"Error encountered accessing file %s, quitting!\n",fname);
 	  return 0;
 	}
+      /* Finally, when the file is ready, map it to memory */
+      if(!(maps[i]=mmap(NULL,fsize,PROT_READ|PROT_WRITE,MAP_SHARED,files[i],0)))
+	{
+	  fprintf(stderr,"Can't create mapping");
+	}
     }
 
- 
+  
+  char a;
+  scanf("%c",&a);
   if(v)
     fprintf(stdout,"Task done, quitting\n");
   /* Clean up */
+  for(unsigned int i=0;i<l;i++)
+    {
+      msync(maps[i],fsize,MS_SYNC);
+      munmap(maps[i],fsize);
+    }
   free(args.iter);
-  free(files); 
 
 }
