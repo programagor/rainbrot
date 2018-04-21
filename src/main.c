@@ -35,6 +35,7 @@ int main (int argc,char** argv)
   /* Parse command-line arguments */
   argp_parse(&argp, argc, argv, 0, 0, &args);
   int v=args.verbose;
+  if(v) setbuf(stdout, NULL); /* to allow incomplete lines */
 
   /* Initialise unset arguments */
   if(!args.iter)
@@ -75,19 +76,34 @@ int main (int argc,char** argv)
 	fprintf(stdout,"Directory already exists, entering\n");
     }
 
-  if(v)
-    fprintf(stdout,"Initialising files:\n");
 
   /* Start creating files, and make an array of handles to the files */
   /* How many files? */
   unsigned int l;
   for(l=2;args.iter[l+1];l++);
   /* Create array of file pointers */
-  FILE **files=calloc( l, sizeof(FILE) );
+  FILE **files=calloc( l, sizeof(FILE*) );
 
+  if(v)
+    fprintf(stdout,"Initialising canvas arrays... ");
   /* Create canvas arrays */
-  uint64_t canvas[l][args.re_size][args.im_size];
- 
+  uint64_t ***canvas=calloc(l,sizeof(uint64_t**));//[l][args.re_size][args.im_size];
+  for(unsigned int i=0;i<l;i++)
+    {
+      canvas[i]=calloc(args.re_size,sizeof(uint64_t*));
+      for(uint32_t x=0;x<args.re_size;x++)
+	{
+	  canvas[i][x]=calloc(args.im_size,sizeof(uint64_t));
+	}
+    }
+  
+  if(v)
+    fprintf(stdout,"done\n");
+
+
+  if(v)
+    fprintf(stdout,"Initialising files:\n");
+  
   /* Map individual files */
   for(unsigned int i=0; args.iter[i+1]; i++)
     {
@@ -103,26 +119,42 @@ int main (int argc,char** argv)
 	{
 	  /* Create file */
 	  files[i]=fopen(fpath,"wb");
-	  for(unsigned int x=0;x<args.re_size;x++)
-	    for(unsigned int y=0;y<args.im_size;y++)
-	      {
-		/* Fill new file and canvas with zeros */
-		canvas[i][x][y]=0;
-	      }
+	  for(uint32_t x=0;x<args.re_size;x++)
+	    {
+	      for(uint32_t y=0;y<args.im_size;y++)
+		{
+		  /* Fill new file and canvas with zeros */
+		  canvas[i][x][y]=0;
+		}
+	      fwrite(canvas[i][x],sizeof(uint64_t),args.im_size,files[i]);
+	    }
+	  fflush(files[i]);
 	  if(v)
 	    fprintf(stdout,"created.\n");
 	}
-      else if((st.st_mode & S_IFMT) == S_IFREG) /* It exists, and is a regular file */
+      else if((st.st_mode & S_IFMT) == S_IFREG) /* It exists, and is a regular file of the right size */
 	{
-	  files[i]=fopen(fpath,"rb");
-	  if(v)
-	    fprintf(stdout,"exists, accessed.\n");
+	  fprintf(stdout,"exists, ");
+	  if(st.st_size != (off_t)(sizeof(uint64_t))*args.re_size*args.im_size)
+	    {
+	      if(v)
+		fprintf(stdout,"corrupted, erasing.\n");
+	      fprintf(stderr,"File %s has unexpected size. Erasing... ",fname);
+	      remove(fpath);
+	      fprintf(stderr,"done.\n");
+	      i--;
+	    }
+	    else{
+	      files[i]=fopen(fpath,"rb");
+	      if(v)
+		fprintf(stdout,"accessed.\n");
+	    }
 	}
       else
 	{
 	  if(v)
 	    fprintf(stdout,"exists, inaccessible.\n");
-	  fprintf(stderr,"Error encountered accessing file %s/%s, quitting!\n",dirname,fname);
+	  fprintf(stderr,"Error encountered accessing file %s, quitting!\n",fname);
 	  return 0;
 	}
     }

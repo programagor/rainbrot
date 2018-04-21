@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-std=c99 -Isrc -Wall -pedantic
+CFLAGS=-std=c99 -Isrc -Wall -pedantic -O3
 
 all: bin/rainbrot-gen
 	rm bin/*.o
