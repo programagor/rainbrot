@@ -12,10 +12,12 @@
 static struct argp_option options[] =
 {
   {"verbose",'v',0,0,"Produce verbose output",-2},
-  {"size",k_size,"WIDTHxHEIGHT",0,"Size of image in pixels",1},
-  {"window",k_window,"RE_MIN,IM_MIN,RE_MAX,IM_MAX",0,"Displayed area of the Gauss plane",1},
-  {"iter",k_iter,"ITER1,ITER2[,...]",0,"Bands of iteration depths",1},
-  {"bail",k_bail,"BAILOUT",0,"Maximal absolute value, which will cause a point to be discarded after reaching it"},
+  {"size",'s',"WIDTHxHEIGHT",0,"Size of image in pixels",1},
+  {"window",'w',"RE_MIN,IM_MIN,RE_MAX,IM_MAX",0,"Displayed area of the Gauss plane",1},
+  {"iter",'i',"ITER1,ITER2[,...]",0,"Bands of iteration depths",1},
+  {"bail",'b',"BAILOUT",0,"Maximal absolute value, which will cause a point to be discarded after reaching it",1},
+  {"runs",'r',"RUNS",0,"Number of starting points to be iterated (O means until stop via Ctrl+C)"},
+  {"threads",'t',"THREANS",0,"Number of threads to run the iterator in"},
   {0}
 };
 
@@ -31,15 +33,15 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
   switch (key)
   {
   case 'v':
-    arguments->verbose = 1;
+    arguments->verbose++;
     break;
-  case k_size:
+  case 's':
     if(2!=sscanf(arg,"%ux%u",
 		 &(arguments->re_size),
 		 &(arguments->im_size)))
       argp_usage(state);
     break;
-  case k_window:
+  case 'w':
     if(4!=sscanf(arg,"%lf,%lf,%lf,%lf",
 		 &(arguments->re_min),
 		 &(arguments->im_min),
@@ -47,7 +49,7 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
 		 &(arguments->im_max)))
       argp_usage(state);
     break;
-  case k_iter:
+  case 'i':
     arguments->iter=csv_parse_row(arg);
     /* If we don't have at least 2 valid values, quit */
     if(!arguments->iter||!arguments->iter[0]||!arguments->iter[1])
@@ -57,9 +59,19 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
       }
     sort_list(arguments->iter);
     break;
-  case k_bail:
+  case 'b':
     if(1!=sscanf(arg,"%lf",
 		 &(arguments->bail)))
+      argp_usage(state);
+    break;
+  case 'r':
+    if(1!=sscanf(arg,"%lu",
+		 &(arguments->runs)))
+      argp_usage(state);
+    break;
+  case 't':
+    if(1!=sscanf(arg,"%hu",
+		 &(arguments->threads)))
       argp_usage(state);
     break;
   case ARGP_KEY_ARG:

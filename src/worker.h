@@ -1,14 +1,16 @@
-#ifndef ARGUMENTS_H
-#define ARGUMENTS_H
+#ifndef WORKER_H
+#define WORKER_H
 
 #include <stdint.h>
-#include <argp.h>
+#include <pthread.h>
 
+void* worker(void *arg);
 
-struct arguments
+struct argw
 {
-  char *args[1];
-  int verbose;
+  pthread_mutex_t *locks;
+  uint64_t **maps;
+  uint64_t *counter;
   uint32_t re_size;
   uint32_t im_size;
   double re_min;
@@ -18,12 +20,6 @@ struct arguments
   uint64_t *iter;
   double bail;
   uint64_t runs;
-  uint16_t threads;
-  
 };
-
-extern struct argp argp;
-
-
 
 #endif

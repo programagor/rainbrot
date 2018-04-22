@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-std=c99 -Isrc -Wall -pedantic -O3
+CFLAGS=-std=c99 -Isrc -Wall -pedantic -O3 -pthread
 
 all: bin/rainbrot-gen
 	rm bin/*.o
@@ -7,7 +7,7 @@ all: bin/rainbrot-gen
 bin/%.o: src/%.c
 	$(CC) -c $< -o $@ $(CFLAGS)
 
-bin/rainbrot-gen: bin/main.o bin/arguments.o bin/list_tools.o
+bin/rainbrot-gen: bin/main.o bin/arguments.o bin/list_tools.o bin/worker.o
 	$(CC) $^ -o $@ $(CFLAGS)
 
 install: bin/rainbrot-gen

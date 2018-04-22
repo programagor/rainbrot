@@ -13,12 +13,16 @@
 /* Memory management */
 #include <sys/mman.h>
 
+/* Thread control */
+#include <pthread.h>
 
 #include "arguments.h"
 #include "list_tools.h"
-
+#include "worker.h"
 
 #define STR_MAXLEN 80
+
+#define CRD2IDX(X,Y) ((Y)*args.re_size+(X))
 
 int main (int argc,char** argv)
 {
@@ -35,6 +39,8 @@ int main (int argc,char** argv)
   args.im_max =  1;
   args.iter = NULL;
   args.bail = 40;
+  args.runs = 10000000L;
+  args.threads = 4;
 
   /* Parse command-line arguments */
   argp_parse(&argp, argc, argv, 0, 0, &args);
@@ -72,7 +78,7 @@ int main (int argc,char** argv)
   else if((st.st_mode & S_IFMT) != S_IFDIR)
     {
       fprintf(stderr,"Can't create directory: File of the same name already exists.\n");
-      return(-1);
+      return(1);
     }
   else
     {
@@ -84,7 +90,7 @@ int main (int argc,char** argv)
   /* Start creating files, and make an array of handles to the files */
   /* How many files? */
   unsigned int l;
-  for(l=2;args.iter[l+1];l++);
+  for(l=1;args.iter[l+1];l++);
 
   if(v)
     fprintf(stdout,"Initialising files:\n");
@@ -94,7 +100,7 @@ int main (int argc,char** argv)
   int files[l];
   uint64_t *maps[l];
   
-  for(unsigned int i=0; args.iter[i+1]; i++)
+  for(unsigned int i=0; i<l; i++)
     {
       char fname[STR_MAXLEN];
       char fpath[2*STR_MAXLEN]; /* filename with path */
@@ -103,23 +109,26 @@ int main (int argc,char** argv)
       snprintf(fname,STR_MAXLEN-1,"%lu-%lu",args.iter[i],args.iter[i+1]-1);
       snprintf(fpath,2*STR_MAXLEN-1,"%s/%s",dirname,fname);
       if(v)
-	fprintf(stdout," - File %s\t... ",fname);
+	fprintf(stdout,"  - %u. file (%s)\t... ",i+1,fname);
       if(stat(fpath,&st)==-1) /* File does not exist */
 	{
 	  /* Create file */
 	  files[i]=open(fpath,O_RDWR|O_CREAT,S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
-	  uint64_t *zeros=calloc(args.im_size,sizeof(uint64_t)); /* Get string full of zeros, to write into file in batches */
-	  for(uint64_t x=0;x<args.re_size;x++)
+	  uint64_t *zeros=calloc(args.re_size,sizeof(uint64_t)); /* Get string full of zeros, to write into file in batches */
+	  for(uint64_t x=0;x<args.im_size;x++)
 	    {
 	      write(files[i],zeros,args.im_size*sizeof(uint64_t)); /* Create file of the right size, full of zeros */
 	    }
 	  free(zeros);
 	  if(v)
 	    fprintf(stdout,"created.\n");
+	  close(files[i]);
+	  files[i]=open(fpath,O_RDWR);
 	}
       else if((st.st_mode & S_IFMT) == S_IFREG) /* It exists */
 	{
-	  fprintf(stdout,"exists, ");
+	  if(v)
+	    fprintf(stdout,"exists, ");
 	  if(st.st_size != fsize) /* but has the wrong size */
 	    {
 	      if(v)
@@ -141,18 +150,66 @@ int main (int argc,char** argv)
 	  if(v)
 	    fprintf(stdout,"exists, inaccessible.\n");
 	  fprintf(stderr,"Error encountered accessing file %s, quitting!\n",fname);
-	  return 0;
+	  return(1);
 	}
       /* Finally, when the file is ready, map it to memory */
       if(!(maps[i]=mmap(NULL,fsize,PROT_READ|PROT_WRITE,MAP_SHARED,files[i],0)))
 	{
-	  fprintf(stderr,"Can't create mapping");
+	  fprintf(stderr,"Can't create mapping\n");
+	  return(1);
 	}
+      madvise(maps[i],fsize,MADV_SEQUENTIAL);
     }
 
+  /* Now, everything is ready. Let's roll! */
+
+  /* Create threads */
+  pthread_mutex_t locks[l+1];
+  for(unsigned int i=0;i<l+1;i++)
+    {
+      pthread_mutex_init(&locks[i],NULL);
+    }
+  uint64_t counter=0;
+  if(v)
+    fprintf(stdout,"Starting %hu worker%s:\n",args.threads,args.threads>1?"s":"");
+  struct argw argw=
+    {
+      locks,
+      maps,
+      &counter,
+      args.re_size,
+      args.im_size,
+      args.re_min,
+      args.re_max,
+      args.im_min,
+      args.im_max,
+      args.iter,
+      args.bail,
+      args.runs
+    };
+  pthread_t thr[args.threads];
+  for(uint16_t t=0;t<args.threads;t++)
+    {
+      if(v)
+	fprintf(stdout,"  - %hu. worker\t... ",t+1);
+      pthread_create(&thr[t],NULL,worker,(void*)&argw);
+      if(v)
+	fprintf(stdout,"done.\n");
+    }
+
+  if(v)
+    fprintf(stdout,"All workers up and running\n");
   
-  char a;
-  scanf("%c",&a);
+  /* Wait for threads to complete */
+  for(uint16_t t=0;t<args.threads;t++)
+    {
+      pthread_join(thr[t],NULL);
+    }
+
+  if(v)
+    fprintf(stdout,"All workers finished\n");
+
+  
   if(v)
     fprintf(stdout,"Task done, quitting\n");
   /* Clean up */
@@ -160,6 +217,7 @@ int main (int argc,char** argv)
     {
       msync(maps[i],fsize,MS_SYNC);
       munmap(maps[i],fsize);
+      close(files[i]);
     }
   free(args.iter);
 
