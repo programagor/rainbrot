@@ -19,6 +19,7 @@ struct arguments
   double bail;
   uint64_t runs;
   uint16_t threads;
+  unsigned int seed;
   
 };
 

@@ -41,11 +41,13 @@ int main (int argc,char** argv)
   args.bail = 40;
   args.runs = 10000000L;
   args.threads = 4;
+  args.seed=time(NULL);
 
   /* Parse command-line arguments */
   argp_parse(&argp, argc, argv, 0, 0, &args);
   int v=args.verbose;
   if(v) setbuf(stdout, NULL); /* to allow incomplete lines */
+  srand(args.seed);
 
   /* Initialise unset arguments */
   if(!args.iter)
@@ -117,7 +119,13 @@ int main (int argc,char** argv)
 	  uint64_t *zeros=calloc(args.re_size,sizeof(uint64_t)); /* Get string full of zeros, to write into file in batches */
 	  for(uint64_t x=0;x<args.im_size;x++)
 	    {
-	      write(files[i],zeros,args.im_size*sizeof(uint64_t)); /* Create file of the right size, full of zeros */
+	      if(-write(files[i],zeros,args.im_size*sizeof(uint64_t))==-1) /* Create file of the right size, full of zeros */
+		{
+		  if(v)
+		    fprintf(stdout,"corrupted.\n");
+		  fprintf(stderr,"Quitting");
+		  return(1);
+		}
 	    }
 	  free(zeros);
 	  if(v)
@@ -164,12 +172,12 @@ int main (int argc,char** argv)
   /* Now, everything is ready. Let's roll! */
 
   /* Create threads */
-  pthread_mutex_t locks[l+1];
-  for(unsigned int i=0;i<l+1;i++)
+  pthread_mutex_t locks[l+2]; /* One lock for each file, last two for counter and rand */
+  for(unsigned int i=0;i<l+2;i++)
     {
       pthread_mutex_init(&locks[i],NULL);
     }
-  uint64_t counter=0;
+  uint64_t counter=0; /* Keeps track of how many runs processed */
   if(v)
     fprintf(stdout,"Starting %hu worker%s:\n",args.threads,args.threads>1?"s":"");
   struct argw argw=
@@ -199,6 +207,7 @@ int main (int argc,char** argv)
 
   if(v)
     fprintf(stdout,"All workers up and running\n");
+
   
   /* Wait for threads to complete */
   for(uint16_t t=0;t<args.threads;t++)

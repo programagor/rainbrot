@@ -16,8 +16,9 @@ static struct argp_option options[] =
   {"window",'w',"RE_MIN,IM_MIN,RE_MAX,IM_MAX",0,"Displayed area of the Gauss plane",1},
   {"iter",'i',"ITER1,ITER2[,...]",0,"Bands of iteration depths",1},
   {"bail",'b',"BAILOUT",0,"Maximal absolute value, which will cause a point to be discarded after reaching it",1},
-  {"runs",'r',"RUNS",0,"Number of starting points to be iterated (O means until stop via Ctrl+C)"},
-  {"threads",'t',"THREANS",0,"Number of threads to run the iterator in"},
+  {"runs",'r',"RUNS",0,"Number of starting points to be iterated (O means until stop via Ctrl+C)",1},
+  {"threads",'t',"THREADS",0,"Number of threads to run the iterator in",1},
+  {"seed",'x',"SEED",0,"Starting seed for the random number generator",1},
   {0}
 };
 
@@ -72,6 +73,11 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
   case 't':
     if(1!=sscanf(arg,"%hu",
 		 &(arguments->threads)))
+      argp_usage(state);
+    break;
+  case 'x':
+    if(1!=sscanf(arg,"%u",
+		 &(arguments->seed)))
       argp_usage(state);
     break;
   case ARGP_KEY_ARG:
