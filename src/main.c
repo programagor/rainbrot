@@ -19,6 +19,7 @@
 #include "arguments.h"
 #include "list_tools.h"
 #include "worker.h"
+#include "functions.h"
 
 #define STR_MAXLEN 80
 
@@ -42,12 +43,15 @@ int main (int argc,char** argv)
   args.runs = 10000000L;
   args.threads = 4;
   args.seed=time(NULL);
+  args.function="mandelbrot";
 
   /* Parse command-line arguments */
   argp_parse(&argp, argc, argv, 0, 0, &args);
   int v=args.verbose;
   if(v) setbuf(stdout, NULL); /* to allow incomplete lines */
   srand(args.seed);
+  long double complex (*function)(long double complex c, long double complex Z)=mandelbrot;
+  int8_t (*optimiser)(long double complex c)=no_optimiser;
 
   /* Initialise unset arguments */
   if(!args.iter)
@@ -172,8 +176,12 @@ int main (int argc,char** argv)
   /* Now, everything is ready. Let's roll! */
 
   /* Create threads */
-  pthread_mutex_t locks[l+2]; /* One lock for each file, last two for counter and rand */
-  for(unsigned int i=0;i<l+2;i++)
+  pthread_mutex_t lock_iter;
+  pthread_mutex_t lock_rand;
+  pthread_mutex_t locks[l]; /* One lock for each file */
+  pthread_mutex_init(&lock_iter,NULL);
+  pthread_mutex_init(&lock_rand,NULL);
+  for(unsigned int i=0;i<l;i++)
     {
       pthread_mutex_init(&locks[i],NULL);
     }
@@ -182,6 +190,8 @@ int main (int argc,char** argv)
     fprintf(stdout,"Starting %hu worker%s:\n",args.threads,args.threads>1?"s":"");
   struct argw argw=
     {
+      &lock_iter,
+      &lock_rand,
       locks,
       maps,
       &counter,
@@ -193,7 +203,9 @@ int main (int argc,char** argv)
       args.im_max,
       args.iter,
       args.bail,
-      args.runs
+      args.runs,
+      function,
+      optimiser
     };
   pthread_t thr[args.threads];
   for(uint16_t t=0;t<args.threads;t++)

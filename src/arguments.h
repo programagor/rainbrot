@@ -20,6 +20,7 @@ struct arguments
   uint64_t runs;
   uint16_t threads;
   unsigned int seed;
+  char* function;
   
 };
 

@@ -1,6 +1,7 @@
 #include <argp.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "arguments.h"
 #include "list_tools.h"
@@ -19,6 +20,7 @@ static struct argp_option options[] =
   {"runs",'r',"RUNS",0,"Number of starting points to be iterated (O means until stop via Ctrl+C)",1},
   {"threads",'t',"THREADS",0,"Number of threads to run the iterator in",1},
   {"seed",'x',"SEED",0,"Starting seed for the random number generator",1},
+  {"function",'f',"{mandelbrot,ship,custom}",0,"",1},
   {0}
 };
 
@@ -87,6 +89,12 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
       }
     arguments->args[state->arg_num]=arg;
     break;
+  case 'f':
+    if(strcmp(arg,"mandelbrot")==0||strcmp(arg,"ship")==0)
+      arguments->function=arg;
+    else
+      argp_usage(state);
+    break;
   case ARGP_KEY_END:
     if (state->arg_num < 1)
       {
@@ -117,4 +125,4 @@ static char doc[] =
 /*
    The ARGP structure itself.
 */
-struct argp argp = {options, parse_opt, args_doc, doc};
+struct argp argp = {options, parse_opt, args_doc, doc, NULL, NULL, NULL};
