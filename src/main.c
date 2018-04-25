@@ -62,7 +62,7 @@ int main (int argc,char** argv)
   char dirname[STR_MAXLEN];
   dirname[STR_MAXLEN-1]='\0';
   snprintf(dirname,STR_MAXLEN-1,"%s_%ux%u(%lf+%lfi_%lf+%lfi)-%lf",
-	   args.args[0],
+	   args.function,
 	   args.re_size,
 	   args.im_size,
 	   args.re_min,

@@ -1,5 +1,6 @@
 #include <pthread.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
 #include <complex.h>
 
@@ -40,7 +41,7 @@ void* worker(void *arg_v)
       /* Runs still needs to be done, continuing */
 
       /* Generate a point that is outside of set */
-      long double complex c;
+      long double complex c,Z;
       int8_t inside; /* 0 is no, 1 is yes, -1 is maybe */
       do
 	{
@@ -62,6 +63,14 @@ void* worker(void *arg_v)
 	  inside=preiterator(c,arg->function,arg->optimiser,arg->iter[0],arg->iter[l],arg->bail);
 	}
       while(inside==1);
+
+      /* Now we have a point which is outside, can iterate it */
+      Z=0;
+      for(uint64_t i=0;abs(Z)<arg->bail&&i<arg->iter[l];i++)
+	{
+	  Z=arg->function(c,Z);
+	  
+	}
       
     }
 }
@@ -82,6 +91,6 @@ uint64_t preiterator(long double complex c, long double complex (*function)(long
 	  Z=function(c,Z);
 	  if(cabs(Z)>bail) return(0);
 	}
-      return(1);
+      return(i<iter_min?0:1);
     }
 }

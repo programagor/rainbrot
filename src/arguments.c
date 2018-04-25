@@ -95,12 +95,12 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
     else
       argp_usage(state);
     break;
-  case ARGP_KEY_END:
-    if (state->arg_num < 1)
-      {
-	argp_usage(state);
-      }
-    break;
+    //  case ARGP_KEY_END:
+    //    if (state->arg_num < 0)
+    //      {
+    //	argp_usage(state);
+    //      }
+    //    break;
   default:
     return ARGP_ERR_UNKNOWN;
   }
@@ -112,7 +112,7 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
    A description of the non-option command-line arguments
      that we accept.
 */
-static char args_doc[] = "OUTFILE";
+static char args_doc[] = "";
 
 /*
   DOC.  Field 4 in ARGP.
