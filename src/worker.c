@@ -43,7 +43,10 @@ void* worker(void *arg_v)
       *(arg->counter)+=1;
       pthread_mutex_unlock(arg->lock_iter);
       /* Runs still needs to be done, continuing */
-	 if(fmod(*arg->counter,arg->runs/10.0)<1){printf("Iteration: %10lu/%10lu\n",*arg->counter,arg->runs);}
+	 if(fmod(*arg->counter,arg->runs/10.0)<1)
+	   {
+	  	 printf("Run: %10lu/%10lu\n",*arg->counter,arg->runs);
+	   }
 	 	
 
       /* Generate a point that is outside of set */
@@ -86,7 +89,7 @@ void* worker(void *arg_v)
 	  uint8_t dirty_rows[arg->re_size];
 	  for(uint32_t i=0;i< arg->re_size ;dirty_rows[i++]=0); /*zero dirty rows */
       /* Now we have a point which is outside, can iterate and draw */
-      Z=0;
+      Z=c;
 	  uint64_t i;
       for(i=0;abs(Z)<arg->bail&&i<arg->iter[l];i++)
 		{
@@ -106,9 +109,8 @@ void* worker(void *arg_v)
 		 
 		
 	  /* Which buffer does this go to? */
-	  uint32_t k;
-	  //printf("%lu:",i);
-      for(k=0;i<arg->iter[k+1] && k<l-1;k++); //TODO: Fix this!
+	  uint32_t k=0;
+      for(k=0;i>arg->iter[k] && k<l-1;k++); //TODO: Fix this!
       pthread_mutex_lock(&arg->locks[k]);
       
       for(uint32_t x=0;x<= arg->re_size;x++)
@@ -142,7 +144,7 @@ uint64_t preiterator(long double complex c, long double complex (*function)(long
   else
     {
       uint64_t i;
-      long double complex Z=0;
+      long double complex Z=c;
       for(i=0;i<iter_max;i++)
 		{
 		  Z=function(c,Z);

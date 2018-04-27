@@ -15,6 +15,11 @@ long double complex mandelbrot(long double complex c, long double complex Z)
   return(Z*Z+c);
 }
 
+long double complex ship(long double complex c, long double complex Z)
+{
+  return(cpowl(cabsl(creall(Z))+cabsl(cimagl(Z))*I,2)+c);
+}
+
 int8_t mandelbrot_optimiser(long double complex c)
 {
   /* Outside of the 2-disk */
@@ -26,7 +31,10 @@ int8_t mandelbrot_optimiser(long double complex c)
   return(-1);
 }
 
-
+long double complex julia(long double complex c, long double complex Z)
+{
+  return(Z*Z+(0.687 + 0.312*I));
+}
 
 
 /* Used as sink, always returns UNCERTAIN = no optimisation */

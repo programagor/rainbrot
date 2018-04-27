@@ -230,7 +230,21 @@ int main (int argc,char** argv)
   if(v)
     fprintf(stdout,"All workers finished\n");
 
-  
+	FILE *f=fopen("mat_data.m","w");
+	for(uint32_t c=0;c<l;c++)
+	  {
+	    fprintf(f,"x%u=[\n",c);
+		for(uint32_t x=0;x<args.re_size;x++)
+		  {
+			for(uint32_t y=0;y<args.im_size;y++)
+			{
+				fprintf(f,"%4lu,",maps[c][args.im_size*x+y]);
+			}
+			fprintf(f,";\n");
+	      }
+	    fprintf(f,"];\n\nfigure;imagesc(1.0*x%u./max(max(x%u)));\n\n\n",c,c);
+	  }
+  	fclose(f);
   if(v)
     fprintf(stdout,"Task done, quitting\n");
   /* Clean up */
