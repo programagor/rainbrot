@@ -93,7 +93,7 @@ void* worker(void *arg_v)
 	  uint64_t i;
       for(i=0;abs(Z)<arg->bail&&i<arg->iter[l];i++)
 		{
-			Z=arg->function(c,Z); /* Iterate */
+			Z=arg->function(Z,c); /* Iterate */
 			
 		  	
 	  		/* increment buffer */
