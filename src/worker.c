@@ -147,7 +147,7 @@ uint64_t preiterator(long double complex c, long double complex (*function)(long
       long double complex Z=c;
       for(i=0;i<iter_max;i++)
 		{
-		  Z=function(c,Z);
+		  Z=function(Z,c);
 		  if(cabs(Z)>bail) return(0);
 		}
       return(i<iter_min?0:1);

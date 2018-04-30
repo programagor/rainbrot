@@ -31,7 +31,7 @@ int8_t mandelbrot_optimiser(long double complex Z)
   return(-1);
 }
 
-long double complex julia(long double complex Z, long double complex c)
+long double complex julia(long double complex Z)
 {
   return(Z*Z+(0.687 + 0.312*I));
 }
