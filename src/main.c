@@ -95,7 +95,7 @@ int main (int argc,char** argv)
 
   /* Start creating files, and make an array of handles to the files */
   /* How many files? */
-  unsigned int l;
+  int l;
   for(l=1;args.iter[l+1];l++);
 
   if(v)
@@ -106,7 +106,7 @@ int main (int argc,char** argv)
   int files[l];
   uint64_t *maps[l];
   
-  for(unsigned int i=0; i<l; i++)
+  for(int i=0; i<l; i++)
     {
       char fname[STR_MAXLEN];
       char fpath[2*STR_MAXLEN]; /* filename with path */
@@ -181,7 +181,7 @@ int main (int argc,char** argv)
   pthread_mutex_t locks[l]; /* One lock for each file */
   pthread_mutex_init(&lock_iter,NULL);
   pthread_mutex_init(&lock_rand,NULL);
-  for(unsigned int i=0;i<l;i++)
+  for(int i=0;i<l;i++)
     {
       pthread_mutex_init(&locks[i],NULL);
     }
@@ -231,7 +231,7 @@ int main (int argc,char** argv)
     fprintf(stdout,"All workers finished\n");
 
 	FILE *f=fopen("mat_data.m","w");
-	for(uint32_t c=0;c<l;c++)
+	for(int c=0;c<l;c++)
 	  {
 	    fprintf(f,"x%u=[\n",c);
 		for(uint32_t x=0;x<args.re_size;x++)
@@ -248,7 +248,7 @@ int main (int argc,char** argv)
   if(v)
     fprintf(stdout,"Task done, quitting\n");
   /* Clean up */
-  for(unsigned int i=0;i<l;i++)
+  for(int i=0;i<l;i++)
     {
       msync(maps[i],fsize,MS_SYNC);
       munmap(maps[i],fsize);
