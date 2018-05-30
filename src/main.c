@@ -121,7 +121,7 @@ int main (int argc,char** argv)
 	  /* Create file */
 	  files[i]=open(fpath,O_RDWR|O_CREAT,S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
 	  uint64_t *zeros=calloc(args.re_size,sizeof(uint64_t)); /* Get string full of zeros, to write into file in batches */
-	  for(uint64_t x=0;x<args.im_size;x++)
+	  for(uint64_t x=0;x<args.re_size;x++)
 	    {
 	      if(-write(files[i],zeros,args.im_size*sizeof(uint64_t))==-1) /* Create file of the right size, full of zeros */
 		{
