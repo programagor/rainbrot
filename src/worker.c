@@ -141,22 +141,32 @@ void* worker(void *arg_v)
     }
 }
 
-uint64_t preiterator(long double complex c, long double complex (*function)(long double complex c, long double complex Z), int8_t (*optimiser)(long double complex c), uint64_t iter_min,uint64_t iter_max, double bail)
+uint64_t preiterator
+(
+  long double complex c,
+  long double complex (*function)(long double complex c, long double complex Z),
+  int8_t (*optimiser)(long double complex c),
+  uint64_t iter_min,
+  uint64_t iter_max,
+  double bail
+)
 {
   int8_t res=optimiser(c);
-  if(res!=-1)
+  uint64_t iter;
+  if(res==1)
     {
-      return(res);
+      return(res); /* We know c is inside, can return */
     }
-  else
+  
+  /* res== 0: We know c is outside, but does it last long enough? */
+  /* res==-1: We don't know whether c is inside or outside, need full iteration cycle */
+  iter=(res==0?iter_min:iter_max);
+  uint64_t i;
+  long double complex Z=c;
+  for(i=0;i<iter;i++)
     {
-      uint64_t i;
-      long double complex Z=c;
-      for(i=0;i<iter_max;i++)
-		{
-		  Z=function(Z,c);
-		  if(cabs(Z)>bail) return(0);
-		}
-      return(i<iter_min?0:1);
+      Z=function(Z,c);
+      if(cabs(Z)>bail) return(0);
     }
+  return(i<iter_min?0:1);
 }

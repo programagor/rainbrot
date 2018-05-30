@@ -238,7 +238,7 @@ int main (int argc,char** argv)
 		  {
 			for(uint32_t y=0;y<args.im_size;y++)
 			{
-				fprintf(f,"%4lu,",maps[c][args.im_size*x+y]);
+				fprintf(f,"%lu,",maps[c][args.im_size*x+y]);
 			}
 			fprintf(f,";\n");
 	      }
