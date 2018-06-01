@@ -113,8 +113,8 @@ void* worker(void *arg_v)
 		 
 		
       /* Which buffer does this go to? */
-      uint32_t k=0;
-      for(k=0;i>arg->iter[k] && k<l-1;k++); //TODO: Fix this!
+      uint32_t k;
+      for(k=0;i>arg->iter[k+1] && k<l-1;k++);
       pthread_mutex_lock(&arg->locks[k]);
 
       for(uint32_t x=0;x< arg->re_size;x++)
