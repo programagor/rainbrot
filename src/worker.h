@@ -7,7 +7,7 @@
 
 void* worker(void *arg);
 
-uint64_t preiterator(
+int8_t preiterator(
 		     long double complex c,
 		     long double complex (*function)(long double complex c, long double complex Z),
 		     int8_t (*optimiser)(long double complex c),

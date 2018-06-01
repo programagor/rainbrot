@@ -22,8 +22,8 @@ long double complex ship(long double complex Z, long double complex c)
 
 int8_t mandelbrot_optimiser(long double complex Z)
 {
-  /* Outside of the 2-disk */
-  if(cabs(Z)>2) return(0);
+  /* Outside of the 1-disk */
+  if(cabs(Z)>1) return(0);
   
   /* Inside te cardioid */
   //if() return(1);

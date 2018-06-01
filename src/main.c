@@ -51,7 +51,7 @@ int main (int argc,char** argv)
   if(v) setbuf(stdout, NULL); /* to allow incomplete lines */
   srand(args.seed);
   long double complex (*function)(long double complex c, long double complex Z)=mandelbrot;
-  int8_t (*optimiser)(long double complex c)=no_optimiser;
+  int8_t (*optimiser)(long double complex c)=mandelbrot_optimiser;
 
   /* Initialise unset arguments */
   if(!args.iter)

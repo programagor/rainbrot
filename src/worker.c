@@ -89,7 +89,6 @@ void* worker(void *arg_v)
 	}
       while(inside==1);
 
-
       int64_t idx_x,idx_y; /* buff (2D array) coords */
       uint8_t dirty_rows[arg->re_size];
       for(uint32_t i=0;i< arg->re_size ;dirty_rows[i++]=0); /*zero dirty rows */
@@ -141,7 +140,7 @@ void* worker(void *arg_v)
     }
 }
 
-uint64_t preiterator
+int8_t preiterator
 (
   long double complex c,
   long double complex (*function)(long double complex c, long double complex Z),
@@ -152,21 +151,22 @@ uint64_t preiterator
 )
 {
   int8_t res=optimiser(c);
-  uint64_t iter;
   if(res==1)
     {
       return(res); /* We know c is inside, can return */
     }
-  
   /* res== 0: We know c is outside, but does it last long enough? */
   /* res==-1: We don't know whether c is inside or outside, need full iteration cycle */
-  iter=(res==0?iter_min:iter_max);
+  uint64_t iter=(res==0?iter_min:iter_max);
   uint64_t i;
   long double complex Z=c;
   for(i=0;i<iter;i++)
     {
       Z=function(Z,c);
-      if(cabs(Z)>bail) return(0);
+      if(cabs(Z)>bail)
+        {
+          return(i<iter_min?1:0);
+        }
     }
-  return(i<iter_min?0:1);
+  return(1);
 }
