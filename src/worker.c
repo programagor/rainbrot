@@ -20,6 +20,11 @@ void* worker(void *arg_v)
 
   /* Create thread-local buffer */
   uint64_t **buff=malloc(arg->re_size*sizeof(uint64_t*));
+  if(!buff)
+    {
+      fprintf(stderr,"Can't allocate space for buffer array\n");
+      exit(1);
+    }
   for(uint32_t x=0;x<arg->re_size;x++)
     {
       buff[x]=calloc(arg->im_size,sizeof(uint64_t));
@@ -28,6 +33,14 @@ void* worker(void *arg_v)
 	  fprintf(stderr,"Can't allocate space for buffer array\n");
 	  exit(1);
 	}
+    }
+    
+  /* Keep track of which rows were written to */
+  uint8_t *dirty_rows=calloc(arg->re_size,sizeof(uint8_t));
+  if(!dirty_rows)
+    {
+      fprintf(stderr,"Can't allocate space for dirty rows marker, quitting\n");
+      exit(1);
     }
   
   /* Run until number of runs is reached */
@@ -90,8 +103,7 @@ void* worker(void *arg_v)
       while(inside==1);
 
       int64_t idx_x,idx_y; /* buff (2D array) coords */
-      uint8_t dirty_rows[arg->re_size];
-      for(uint32_t i=0;i< arg->re_size ;dirty_rows[i++]=0); /*zero dirty rows */
+      
       /* Now we have a point which is outside, can iterate and draw */
       Z=c;
       uint64_t i;
@@ -132,10 +144,17 @@ void* worker(void *arg_v)
       	}
       pthread_mutex_unlock(&arg->locks[k]);
       
-      for(uint32_t x=0;x<arg->re_size;x++)for(uint32_t y=0;y<arg->im_size;y++)
-					    {
-					      buff[x][y]=0;
-					    }
+      for(uint32_t x=0;x< arg->re_size;x++)
+        {
+      	  if(dirty_rows[x])
+	    {
+	      for(uint32_t y=0;y< arg->im_size;y++)
+		{
+		  buff[x][y]=0;
+		}
+	      dirty_rows[x]=0;
+	    }
+      	}
       
     }
 }

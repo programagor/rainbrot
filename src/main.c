@@ -105,7 +105,12 @@ int main (int argc,char** argv)
   off_t fsize = (off_t)(sizeof(uint64_t))*args.re_size*args.im_size;
   int files[l];
   uint64_t *maps[l];
-  
+  uint64_t *zeros=calloc(args.re_size,sizeof(uint64_t)); /* String full of zeros, to write into new files in batches */
+  if(!zeros)
+  {
+    fprintf(stderr,"Can't create a string full of zeros, quitting\n");
+    return(1);    
+  }        
   for(int i=0; i<l; i++)
     {
       char fname[STR_MAXLEN];
@@ -120,7 +125,6 @@ int main (int argc,char** argv)
 	{
 	  /* Create file */
 	  files[i]=open(fpath,O_RDWR|O_CREAT,S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
-	  uint64_t *zeros=calloc(args.re_size,sizeof(uint64_t)); /* Get string full of zeros, to write into file in batches */
 	  for(uint64_t x=0;x<args.re_size;x++)
 	    {
 	      if(-write(files[i],zeros,args.im_size*sizeof(uint64_t))==-1) /* Create file of the right size, full of zeros */
@@ -131,7 +135,6 @@ int main (int argc,char** argv)
 		  return(1);
 		}
 	    }
-	  free(zeros);
 	  if(v)
 	    fprintf(stdout,"created.\n");
 	  close(files[i]);
@@ -165,14 +168,14 @@ int main (int argc,char** argv)
 	  return(1);
 	}
       /* Finally, when the file is ready, map it to memory */
-      if(!(maps[i]=mmap(NULL,fsize,PROT_READ|PROT_WRITE,MAP_SHARED,files[i],0)))
+      if((maps[i]=mmap(NULL,fsize,PROT_READ|PROT_WRITE,MAP_SHARED,files[i],0))==MAP_FAILED)
 	{
-	  fprintf(stderr,"Can't create mapping\n");
+	  fprintf(stderr,"Can't create mapping, quitting\n");
 	  return(1);
 	}
       madvise(maps[i],fsize,MADV_RANDOM);
     }
-
+  free(zeros);
   /* Now, everything is ready. Let's roll! */
 
   /* Create threads */
