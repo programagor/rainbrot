@@ -22,11 +22,16 @@ long double complex ship(long double complex Z, long double complex c)
 
 int8_t mandelbrot_optimiser(long double complex Z)
 {
-  /* Outside of the 1-disk */
-  if(cabs(Z)>1) return(0);
+  /* Outside of the 2-disk */
+  if(cabs(Z)>2) return(0);
   
   /* Inside te cardioid */
-  //if() return(1);
+  long double x=creall(Z);
+  long double y=cimagl(Z);
+  long double p=sqrtl(powl(x-0.25L,2)+powl(y,2));
+  if(x<p-2*powl(p,2)+0.25L) return(1);
+  /* Inside the 2-period bulb */
+  if(powl(x+1,2)+powl(y,2)<0.0625L) return(1);
   
   return(-1);
 }

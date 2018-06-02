@@ -1,13 +1,18 @@
-%mat_data.m;
-image=zeros(400,400,3);
-image(:,:,1)=(x4+x5);
-image(:,:,1)=image(:,:,1)./max(max(image(:,:,1)));
-image(:,:,1)=image(:,:,1).^0.25;
-image(:,:,2)=(x2+x3);
-image(:,:,2)=image(:,:,2)./max(max(image(:,:,2)));
-image(:,:,2)=image(:,:,2).^0.65;
-image(:,:,3)=x1;    
-image(:,:,3)=image(:,:,3)./max(max(image(:,:,3)));
-image(:,:,3)=image(:,:,3).^0.85;
+function raindraw(dir, iters, dim, map)
+pic=zeros([dim(1),dim(2),3]);
+for i=1:length(iters)-1
+    f=fopen(sprintf('%s/%d-%d',dir,iters(i),iters(i+1)-1));
+    t=fread(f,dim,'uint64');
+    for c=1:3
+        pic(:,:,c)=pic(:,:,c)+t.*map(c,i);
+    end
+end
 
-figure, imshow(image);
+for c=1:3
+    pic(:,:,c)=pic(:,:,c)./max(max(pic(:,:,c)));
+end
+    %res=uint16(pic.*65535);
+    figure;
+    imagesc(pic);
+
+end
