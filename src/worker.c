@@ -9,9 +9,35 @@
 
 #include "worker.h"
 
+uint64_t check_ctr(uint64_t* ctr, pthread_mutex_t* lock)
+{
+  pthread_mutex_lock(lock);
+  uint64_t r=*ctr;
+  pthread_mutex_unlock(lock);
+  return r;
+}
+
+uint64_t incr_ctr(uint64_t* ctr, pthread_mutex_t* lock)
+{
+  pthread_mutex_lock(lock);
+  uint64_t r=++*ctr;
+  pthread_mutex_unlock(lock);
+  return r;
+}
+
+void quit_thread(uint64_t **buff, uint32_t re_size)
+{
+  /* We're done, quitting thread */
+  for(uint32_t x=0;x<re_size;x++)
+    {
+      free(buff[x]);
+    }
+  free(buff);
+  pthread_exit(NULL);
+}
+
 void* worker(void *arg_v)
 {
-
 
   struct argw *arg=(struct argw*)arg_v;
   
@@ -46,26 +72,6 @@ void* worker(void *arg_v)
   /* Run until number of runs is reached */
   while(1)
     {
-      pthread_mutex_lock(arg->lock_iter);
-      if(*(arg->counter) >= arg->runs)
-	{
-	  pthread_mutex_unlock(arg->lock_iter);
-	  /* We're done, quitting thread */
-	  for(uint32_t x=0;x<arg->re_size;x++)
-	    {
-	      free(buff[x]);
-	    }
-	  free(buff);
-	  pthread_exit(NULL);
-	}
-      *(arg->counter)+=1;
-      pthread_mutex_unlock(arg->lock_iter);
-      /* Runs still needs to be done, continuing */
-      if(fmod(*arg->counter,arg->runs/10.0)<1)
-	{
-	  printf("Run: %10lu/%10lu\n",*arg->counter,arg->runs);
-	}
-	 	
 
       /* Generate a point that is outside of set */
       long double complex c,Z;
@@ -100,8 +106,15 @@ void* worker(void *arg_v)
 	  
 	  inside=preiterator(c,arg->function,arg->optimiser,arg->iter[0],arg->iter[l],arg->bail);
 	}
-      while(inside==1);
+      while(inside==1&&check_ctr(arg->counter,arg->lock_iter)<arg->runs);
+      
+      if(incr_ctr(arg->counter,arg->lock_iter)>arg->runs) quit_thread(buff,arg->re_size);
 
+      if(fmod(*arg->counter,arg->runs/10.0)<1)
+        {
+          printf("Run: %10lu/%10lu\n",*arg->counter,arg->runs);
+        }
+      
       int64_t idx_x,idx_y; /* buff (2D array) coords */
       
       /* Now we have a point which is outside, can iterate and draw */
