@@ -25,7 +25,7 @@ uint64_t incr_ctr(uint64_t* ctr, pthread_mutex_t* lock)
   return r;
 }
 
-void quit_thread(uint64_t **buff, uint32_t re_size)
+void quit_thread(uint64_t **buff, uint32_t re_size, uint8_t *dirty_rows)
 {
   /* We're done, quitting thread */
   for(uint32_t x=0;x<re_size;x++)
@@ -33,6 +33,7 @@ void quit_thread(uint64_t **buff, uint32_t re_size)
       free(buff[x]);
     }
   free(buff);
+  free(dirty_rows);
   pthread_exit(NULL);
 }
 
@@ -108,7 +109,7 @@ void* worker(void *arg_v)
 	}
       while(inside==1&&check_ctr(arg->counter,arg->lock_iter)<arg->runs);
       
-      if(incr_ctr(arg->counter,arg->lock_iter)>arg->runs) quit_thread(buff,arg->re_size);
+      if(incr_ctr(arg->counter,arg->lock_iter)>arg->runs) quit_thread(buff,arg->re_size,dirty_rows);
 
       if(fmod(*arg->counter,arg->runs/10.0)<1)
         {
