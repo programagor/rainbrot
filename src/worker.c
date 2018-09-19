@@ -147,7 +147,7 @@ void* worker(void *arg_v)
 	          /* Is our run earliest? */
 	          for(uint16_t i=0;i<arg->threads;i++)
 	            {
-	              if(i!=arg->threadID&&arg->queue[i]!=-1&&arg->queue[i]<run-1)
+	              if(i!=arg->threadID&&arg->queue[i]!=-1&&arg->queue[i]<run)
 		        {
 			  quit_thread(buff,arg->re_size,dirty_rows);
 			}  
