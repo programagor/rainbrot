@@ -39,7 +39,6 @@ void quit_thread(uint64_t **buff, uint32_t re_size, uint8_t *dirty_rows)
 
 void* worker(void *arg_v)
 {
-
   struct argw *arg=(struct argw*)arg_v;
   
   uint32_t l;
@@ -75,6 +74,11 @@ void* worker(void *arg_v)
   /* Run until number of runs is reached */
   while(1)
     {
+      uint64_t r=incr_ctr(arg->counter,arg->lock_iter);
+      if(fmod(r,arg->runs/10.0)<1)
+        {
+          printf("Run: %10lu/%10lu\n",r,arg->runs);
+        }
       /* Generate a point that is outside of set */
       long double complex c,Z;
       int8_t inside; /* 0 is no, 1 is yes, -1 is maybe */
@@ -114,7 +118,7 @@ void* worker(void *arg_v)
 	  
 	  if(check_ctr(arg->counter,arg->lock_iter)>=arg->runs)
 	    {
-	      if(inside==0)
+	      if(inside==1)
 	        {
 	          for(uint16_t i=0;i<arg->threads;i++)
 	            {
@@ -127,7 +131,7 @@ void* worker(void *arg_v)
 	        }
 	      else
 	        {
-	          arg->queue[arg->threadID]=*(arg->run);
+	          arg->queue[arg->threadID]=run;
 	          /* TODO: Replace busy wait with lock / pthread_cond_wait */
 	          /* Wait for arg->queue to contain  zeros */
 	          uint16_t zeros;
@@ -143,22 +147,20 @@ void* worker(void *arg_v)
 	          /* Is our run earliest? */
 	          for(uint16_t i=0;i<arg->threads;i++)
 	            {
-	              if(i!=arg->threadID&&arg->queue[i]!=-1&&arg->queue[i]<run) quit_thread(buff,arg->re_size,dirty_rows);
+	              if(i!=arg->threadID&&arg->queue[i]!=-1&&arg->queue[i]<run-1)
+		        {
+			  quit_thread(buff,arg->re_size,dirty_rows);
+			}  
 	            }
 	        }
 	    }
 	}
-      while(inside==1&&check_ctr(arg->counter,arg->lock_iter)<arg->runs);
-      
-      if(incr_ctr(arg->counter,arg->lock_iter)>arg->runs)
+      while(inside==1);
+      uint8_t last=0;
+      if(check_ctr(arg->counter,arg->lock_iter)>=arg->runs)
         {
-	  arg->queue[arg->threadID]=-1;
-	  quit_thread(buff,arg->re_size,dirty_rows);
+	  last=1;
 	}
-      if(fmod(*arg->counter,arg->runs/10.0)<1)
-        {
-          printf("Run: %10lu/%10lu\n",*arg->counter,arg->runs);
-        }
       
       int64_t idx_x,idx_y; /* buff (2D array) coords */
       
@@ -213,7 +215,10 @@ void* worker(void *arg_v)
 	      dirty_rows[x]=0;
 	    }
       	}
-      
+      if(last)
+        {
+          quit_thread(buff,arg->re_size,dirty_rows);
+        }
     }
 }
 
