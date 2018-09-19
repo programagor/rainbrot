@@ -55,10 +55,10 @@ void* worker(void *arg_v)
     {
       buff[x]=calloc(arg->im_size,sizeof(uint64_t));
       if(!buff[x])
-	{
-	  fprintf(stderr,"Can't allocate space for buffer array\n");
-	  exit(1);
-	}
+    {
+      fprintf(stderr,"Can't allocate space for buffer array\n");
+      exit(1);
+    }
     }
     
   /* Keep track of which rows were written to */
@@ -83,138 +83,146 @@ void* worker(void *arg_v)
       long double complex c,Z;
       int8_t inside; /* 0 is no, 1 is yes, -1 is maybe */
       do
-	{
-	  /* Record positive runs (to avoid race condition at the end) */
-	  int64_t run;
-	  
-	  /* Use Box-Muller algorithm to get two normally distributed numbers */
-	  /* and then make one complex number from them */
-		  
-	  int U1,U2;
-	  /* rand is not thread safe, needs locking */
-	  pthread_mutex_lock(arg->lock_rand);
-	  do
-	    {
-	      U1=rand();
-	    }
-	  while(U1==0);
-	  U2=rand();
-	  run=++*(arg->run);
-	  pthread_mutex_unlock(arg->lock_rand);
-		  
-	
-	  /* Muller-Box Algorithm */
-	  c=csqrtl(-2.0*clogl(U1*((double)1.0/RAND_MAX)))*cexpl(PI_2_I*(U2*((double)1.0/RAND_MAX)));
-	  /* c now has Gaussian distribution (on the Gaussian plane) */
-		  
-	  /* Scale axis-wise (non-comforming mapping) */
-	  /* TODO: Adjustable standard deviation and mean of iterator samples */
-	  long double a1, a2, b1, b2; 
-	  a1=b1=1;
-	  a2=b2=0;
-	  c=(creall(c)*a1+a2)+((long double complex)I)*(cimagl(c)*b1+b2);
-	  
-	  inside=preiterator(c,arg->function,arg->optimiser,arg->iter[0],arg->iter[l],arg->bail);
-	  
-	  if(check_ctr(arg->counter,arg->lock_iter)>=arg->runs)
-	    {
-	      if(inside==1)
-	        {
-	          for(uint16_t i=0;i<arg->threads;i++)
-	            {
-	              if(arg->queue[i])
-	                {
-	                  arg->queue[arg->threadID]=-1;
-	                  quit_thread(buff,arg->re_size,dirty_rows);
-	                }
-	            }
-	        }
-	      else
-	        {
-	          arg->queue[arg->threadID]=run;
-	          /* TODO: Replace busy wait with lock / pthread_cond_wait */
-	          /* Wait for arg->queue to contain  zeros */
-	          uint16_t zeros;
-	          do
-	            {
-	              zeros=0;
-	              for(uint16_t i=0;i<arg->threads;i++)
-	                {
-	                  if(arg->queue[i]==0) zeros++;
-	                }
-	            }
-	          while(zeros);
-	          /* Is our run earliest? */
-	          for(uint16_t i=0;i<arg->threads;i++)
-	            {
-	              if(i!=arg->threadID&&arg->queue[i]!=-1&&arg->queue[i]<run)
-		        {
-			  quit_thread(buff,arg->re_size,dirty_rows);
-			}  
-	            }
-	        }
-	    }
-	}
+        {
+          /* Record positive runs (to avoid race condition at the end) */
+          int64_t run;
+          
+          /* Use Box-Muller algorithm to get two normally distributed numbers */
+          /* and then make one complex number from them */
+          
+          int U1,U2;
+          /* rand is not thread safe, needs locking */
+          pthread_mutex_lock(arg->lock_rand);
+          do
+            {
+              U1=rand();
+            }
+          while(U1==0);
+          U2=rand();
+          run=++*(arg->run);
+          pthread_mutex_unlock(arg->lock_rand);
+              
+        
+          /* Muller-Box Algorithm */
+          c=csqrtl(-2.0*clogl(U1*((double)1.0/RAND_MAX)))*cexpl(PI_2_I*(U2*((double)1.0/RAND_MAX)));
+          /* c now has Gaussian distribution (on the Gaussian plane) */
+              
+          /* Scale axis-wise (non-comforming mapping) */
+          /* TODO: Adjustable standard deviation and mean of iterator samples */
+          long double a1, a2, b1, b2; 
+          a1=b1=1;
+          a2=b2=0;
+          c=(creall(c)*a1+a2)+((long double complex)I)*(cimagl(c)*b1+b2);
+          
+          inside=preiterator(c,arg->function,arg->optimiser,arg->iter[0],arg->iter[l],arg->bail);
+          
+          if(check_ctr(arg->counter,arg->lock_iter)>=arg->runs)
+            {
+              if(inside==1)
+                {
+                  for(uint16_t i=0;i<arg->threads;i++)
+                    {
+                      if(arg->queue[i])
+                        {
+                          arg->queue[arg->threadID]=-1;
+                          quit_thread(buff,arg->re_size,dirty_rows);
+                        }
+                    }
+                }
+              else
+                {
+                  arg->queue[arg->threadID]=run;
+                  /* Broadcast retry */
+                  /* Wait for arg->queue to contain  zeros */
+                  uint16_t zeros;
+                  while(1)
+                    {
+                      zeros=0;
+                      for(uint16_t i=0;i<arg->threads;i++)
+                        {
+                          if(arg->queue[i]==0)
+                            {
+                              zeros++;
+                              break;
+                            }
+                        }
+                      if(!zeros)
+                        {
+                          break;
+                        }
+                      /* Wait */
+                    }
+                  /* Is our run earliest? */
+                  for(uint16_t i=0;i<arg->threads;i++)
+                    {
+                      if(i!=arg->threadID&&arg->queue[i]!=-1&&arg->queue[i]<run)
+                        {
+                          quit_thread(buff,arg->re_size,dirty_rows);
+                        }
+                    }
+                }
+            }
+        }
       while(inside==1);
       uint8_t last=0;
       if(check_ctr(arg->counter,arg->lock_iter)>=arg->runs)
         {
-	  last=1;
-	}
-      
+          last=1;
+        }
+        
       int64_t idx_x,idx_y; /* buff (2D array) coords */
       
       /* Now we have a point which is outside, can iterate and draw */
       Z=c;
       uint64_t i;
       for(i=0;abs(Z)<arg->bail&&i<arg->iter[l];i++)
-	{
-	  Z=arg->function(Z,c); /* Iterate */
-			
-		  	
-	  /* increment buffer */
-	  idx_x=round((creall(Z) - arg->re_min)*( arg->re_size -1)/(arg->re_max-arg->re_min));
-	  idx_y=round((cimagl(Z) - arg->im_min)*( arg->im_size -1)/(arg->im_max-arg->im_min));
-		  		
-	  if(idx_x>=0 && idx_x < arg->re_size && idx_y>=0 && idx_y < arg->im_size)
-	    {
-	      buff[idx_x][idx_y]++;
-	      dirty_rows[idx_x]=1;
-	    }
-	}
-		 
-		
+        {
+          Z=arg->function(Z,c); /* Iterate */
+          
+          
+          /* increment buffer */
+          idx_x=round((creall(Z) - arg->re_min)*( arg->re_size -1)/(arg->re_max-arg->re_min));
+          idx_y=round((cimagl(Z) - arg->im_min)*( arg->im_size -1)/(arg->im_max-arg->im_min));
+                  
+          if(idx_x>=0 && idx_x < arg->re_size && idx_y>=0 && idx_y < arg->im_size)
+            {
+              buff[idx_x][idx_y]++;
+              dirty_rows[idx_x]=1;
+            }
+        }
+      
+      
       /* Which buffer does this go to? */
       uint32_t k;
       for(k=0;i>arg->iter[k+1] && k<l-1;k++);
       pthread_mutex_lock(&arg->locks[k]);
-
+      
       for(uint32_t x=0;x< arg->re_size;x++)
         {
-      	  if(dirty_rows[x])
-	    {
-	      for(uint32_t y=0;y< arg->im_size;y++)
-		{
-		  if(buff[x][y])
-		    {
-		      arg->maps[k][arg->im_size*x+y]+=buff[x][y];
-		    }
-		}
-	    }
-      	}
+          if(dirty_rows[x])
+            {
+              for(uint32_t y=0;y< arg->im_size;y++)
+                {
+                  if(buff[x][y])
+                    {
+                      arg->maps[k][arg->im_size*x+y]+=buff[x][y];
+                    }
+                }
+            }
+        }
       pthread_mutex_unlock(&arg->locks[k]);
       
       for(uint32_t x=0;x< arg->re_size;x++)
         {
-      	  if(dirty_rows[x])
-	    {
-	      for(uint32_t y=0;y< arg->im_size;y++)
-		{
-		  buff[x][y]=0;
-		}
-	      dirty_rows[x]=0;
-	    }
-      	}
+          if(dirty_rows[x])
+            {
+              for(uint32_t y=0;y< arg->im_size;y++)
+                {
+                  buff[x][y]=0;
+                }
+              dirty_rows[x]=0;
+            }
+        }
       if(last)
         {
           quit_thread(buff,arg->re_size,dirty_rows);
