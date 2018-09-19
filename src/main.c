@@ -179,6 +179,10 @@ int main (int argc,char** argv)
   /* Now, everything is ready. Let's roll! */
 
   /* Create threads */
+  struct argw argw[args.threads];
+  int64_t queue[args.threads]; /* Used to stop race condition at last run */
+  uint64_t counter=0; /* Keeps track of how many runs processed */
+  uint64_t run=0;
   pthread_mutex_t lock_iter;
   pthread_mutex_t lock_rand;
   pthread_mutex_t locks[l]; /* One lock for each file */
@@ -188,34 +192,39 @@ int main (int argc,char** argv)
     {
       pthread_mutex_init(&locks[i],NULL);
     }
-  uint64_t counter=0; /* Keeps track of how many runs processed */
   if(v)
     fprintf(stdout,"Starting %hu worker%s:\n",args.threads,args.threads>1?"s":"");
-  struct argw argw=
-    {
-      &lock_iter,
-      &lock_rand,
-      locks,
-      maps,
-      &counter,
-      args.re_size,
-      args.im_size,
-      args.re_min,
-      args.re_max,
-      args.im_min,
-      args.im_max,
-      args.iter,
-      args.bail,
-      args.runs,
-      function,
-      optimiser
-    };
+
   pthread_t thr[args.threads];
   for(uint16_t t=0;t<args.threads;t++)
     {
       if(v)
 	fprintf(stdout,"  - %hu. worker\t... ",t+1);
-      pthread_create(&thr[t],NULL,worker,(void*)&argw);
+      queue[t]=0;
+      argw[t]=
+        (struct argw) {
+          &lock_iter,
+          &lock_rand,
+          locks,
+          maps,
+          &counter,
+          args.re_size,
+          args.im_size,
+          args.re_min,
+          args.re_max,
+          args.im_min,
+          args.im_max,
+          args.iter,
+          args.bail,
+          args.runs,
+          function,
+          optimiser,
+          args.threads,
+          t,
+          queue,
+          &run
+        };
+      pthread_create(&thr[t],NULL,worker,(void*)&argw[t]);
       if(v)
 	fprintf(stdout,"done.\n");
     }

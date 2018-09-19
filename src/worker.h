@@ -33,6 +33,10 @@ struct argw
   uint64_t runs;
   long double complex (*function)(long double complex c, long double complex Z);
   int8_t (*optimiser)(long double complex c);
+  uint16_t threads;
+  int32_t threadID;
+  int64_t *queue;
+  uint64_t *run;
 };
 
 #endif

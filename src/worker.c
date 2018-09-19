@@ -70,15 +70,19 @@ void* worker(void *arg_v)
       exit(1);
     }
   
+
+  
   /* Run until number of runs is reached */
   while(1)
     {
-
       /* Generate a point that is outside of set */
       long double complex c,Z;
       int8_t inside; /* 0 is no, 1 is yes, -1 is maybe */
       do
 	{
+	  /* Record positive runs (to avoid race condition at the end) */
+	  int64_t run;
+	  
 	  /* Use Box-Muller algorithm to get two normally distributed numbers */
 	  /* and then make one complex number from them */
 		  
@@ -91,6 +95,7 @@ void* worker(void *arg_v)
 	    }
 	  while(U1==0);
 	  U2=rand();
+	  run=++*(arg->run);
 	  pthread_mutex_unlock(arg->lock_rand);
 		  
 	
@@ -106,11 +111,50 @@ void* worker(void *arg_v)
 	  c=(creall(c)*a1+a2)+((long double complex)I)*(cimagl(c)*b1+b2);
 	  
 	  inside=preiterator(c,arg->function,arg->optimiser,arg->iter[0],arg->iter[l],arg->bail);
+	  
+	  if(check_ctr(arg->counter,arg->lock_iter)>=arg->runs)
+	    {
+	      if(inside==0)
+	        {
+	          for(uint16_t i=0;i<arg->threads;i++)
+	            {
+	              if(arg->queue[i])
+	                {
+	                  arg->queue[arg->threadID]=-1;
+	                  quit_thread(buff,arg->re_size,dirty_rows);
+	                }
+	            }
+	        }
+	      else
+	        {
+	          arg->queue[arg->threadID]=*(arg->run);
+	          /* TODO: Replace busy wait with lock / pthread_cond_wait */
+	          /* Wait for arg->queue to contain  zeros */
+	          uint16_t zeros;
+	          do
+	            {
+	              zeros=0;
+	              for(uint16_t i=0;i<arg->threads;i++)
+	                {
+	                  if(arg->queue[i]==0) zeros++;
+	                }
+	            }
+	          while(zeros);
+	          /* Is our run earliest? */
+	          for(uint16_t i=0;i<arg->threads;i++)
+	            {
+	              if(i!=arg->threadID&&arg->queue[i]!=-1&&arg->queue[i]<run) quit_thread(buff,arg->re_size,dirty_rows);
+	            }
+	        }
+	    }
 	}
       while(inside==1&&check_ctr(arg->counter,arg->lock_iter)<arg->runs);
       
-      if(incr_ctr(arg->counter,arg->lock_iter)>arg->runs) quit_thread(buff,arg->re_size,dirty_rows);
-
+      if(incr_ctr(arg->counter,arg->lock_iter)>arg->runs)
+        {
+	  arg->queue[arg->threadID]=-1;
+	  quit_thread(buff,arg->re_size,dirty_rows);
+	}
       if(fmod(*arg->counter,arg->runs/10.0)<1)
         {
           printf("Run: %10lu/%10lu\n",*arg->counter,arg->runs);

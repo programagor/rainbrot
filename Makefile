@@ -5,7 +5,7 @@ all: bin/rainbrot-gen
 	rm bin/*.o
 
 bin/%.o: src/%.c
-	$(CC) -c $< -o $@ $(CFLAGS)
+	$(CC) $(CFLAGS) -c $< -o $@
 
 bin/rainbrot-gen: bin/main.o bin/arguments.o bin/list_tools.o bin/worker.o bin/functions.o
 	$(CC) $^ -o $@ $(CFLAGS)
