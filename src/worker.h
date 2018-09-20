@@ -17,11 +17,11 @@ int8_t preiterator(
 
 struct argw
 {
-  pthread_mutex_t *lock_iter;
   pthread_mutex_t *lock_rand;
   pthread_mutex_t *locks;
   uint64_t **maps;
   uint64_t *counter;
+  uint64_t *hits;
   uint32_t re_size;
   uint32_t im_size;
   double re_min;
@@ -33,10 +33,6 @@ struct argw
   uint64_t runs;
   long double complex (*function)(long double complex c, long double complex Z);
   int8_t (*optimiser)(long double complex c);
-  uint16_t threads;
-  int32_t threadID;
-  int64_t *queue;
-  uint64_t *run;
 };
 
 #endif

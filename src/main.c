@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <argp.h>
 
+#include <string.h>
+
 /* Directory creation, file manipulation */
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -50,8 +52,29 @@ int main (int argc,char** argv)
   int v=args.verbose;
   if(v) setbuf(stdout, NULL); /* to allow incomplete lines */
   srand(args.seed);
-  long double complex (*function)(long double complex c, long double complex Z)=mandelbrot;
-  int8_t (*optimiser)(long double complex c)=mandelbrot_optimiser;
+  long double complex (*function)(long double complex c, long double complex Z);
+  int8_t (*optimiser)(long double complex c);
+  if(strcmp(args.function,"mandelbrot")==0)
+    {
+      function=mandelbrot;
+      optimiser=mandelbrot_optimiser;
+    }
+  else if(strcmp(args.function,"mandelbrot")==0)
+    {
+      function=ship;
+      optimiser=no_optimiser;
+    }
+  else if(strcmp(args.function,"julia")==0)
+    {
+      function=julia;
+      optimiser=no_optimiser;
+    }
+  else
+    {
+      /* TODO: Implement loading functions from external .o files */
+      fprintf(stderr,"Couldn't load file functions/%s.o (not implemented)\n",args.function);
+      return(1);
+    }
 
   /* Initialise unset arguments */
   if(!args.iter)
@@ -62,14 +85,14 @@ int main (int argc,char** argv)
   char dirname[STR_MAXLEN];
   dirname[STR_MAXLEN-1]='\0';
   snprintf(dirname,STR_MAXLEN-1,"%s_%ux%u(%lf+%lfi_%lf+%lfi)-%lf",
-	   args.function,
-	   args.re_size,
-	   args.im_size,
-	   args.re_min,
-	   args.im_min,
-	   args.re_max,
-	   args.im_max,
-	   args.bail);
+           args.function,
+           args.re_size,
+           args.im_size,
+           args.re_min,
+           args.im_min,
+           args.re_max,
+           args.im_max,
+           args.bail);
 
   if(v)
     fprintf(stdout,"Outputting files into working directory: ./%s\n",dirname);
@@ -79,7 +102,7 @@ int main (int argc,char** argv)
     {
       mkdir(dirname,0755);
       if(v)
-	fprintf(stdout,"Creating directory\n");
+        fprintf(stdout,"Creating directory\n");
     }
   else if((st.st_mode & S_IFMT) != S_IFDIR)
     {
@@ -89,7 +112,7 @@ int main (int argc,char** argv)
   else
     {
       if(v)
-	fprintf(stdout,"Directory already exists, entering\n");
+        fprintf(stdout,"Directory already exists, entering\n");
     }
 
 
@@ -120,59 +143,59 @@ int main (int argc,char** argv)
       snprintf(fname,STR_MAXLEN-1,"%lu-%lu",args.iter[i],args.iter[i+1]-1);
       snprintf(fpath,2*STR_MAXLEN-1,"%s/%s",dirname,fname);
       if(v)
-	fprintf(stdout,"  - %u. file (%s)\t... ",i+1,fname);
+        fprintf(stdout,"  - %u. file (%s)\t... ",i+1,fname);
       if(stat(fpath,&st)==-1) /* File does not exist */
-	{
-	  /* Create file */
-	  files[i]=open(fpath,O_RDWR|O_CREAT,S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
-	  for(uint64_t x=0;x<args.re_size;x++)
-	    {
-	      if(-write(files[i],zeros,args.im_size*sizeof(uint64_t))==-1) /* Create file of the right size, full of zeros */
-		{
-		  if(v)
-		    fprintf(stdout,"corrupted.\n");
-		  fprintf(stderr,"Quitting");
-		  return(1);
-		}
-	    }
-	  if(v)
-	    fprintf(stdout,"created.\n");
-	  close(files[i]);
-	  files[i]=open(fpath,O_RDWR);
-	}
+        {
+          /* Create file */
+          files[i]=open(fpath,O_RDWR|O_CREAT,S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
+          for(uint64_t x=0;x<args.re_size;x++)
+            {
+              if(-write(files[i],zeros,args.im_size*sizeof(uint64_t))==-1) /* Create file of the right size, full of zeros */
+                {
+                  if(v)
+                    fprintf(stdout,"corrupted.\n");
+                  fprintf(stderr,"Quitting");
+                  return(1);
+                }
+            }
+          if(v)
+            fprintf(stdout,"created.\n");
+          close(files[i]);
+          files[i]=open(fpath,O_RDWR);
+        }
       else if((st.st_mode & S_IFMT) == S_IFREG) /* It exists */
-	{
-	  if(v)
-	    fprintf(stdout,"exists, ");
-	  if(st.st_size != fsize) /* but has the wrong size */
-	    {
-	      if(v)
-		fprintf(stdout,"corrupted, erasing.\n");
-	      fprintf(stderr,"File %s has unexpected size. Erasing... ",fname);
-	      remove(fpath); /* delete file */
-	      fprintf(stderr,"done.\n");
-	      i--; /* Retry */
-	    }
-	    else{
-	      /* File exists and is of the right size */
-	      files[i]=open(fpath,O_RDWR);
-	      if(v)
-		fprintf(stdout,"accessed.\n");
-	    }
-	}
+        {
+          if(v)
+            fprintf(stdout,"exists, ");
+          if(st.st_size != fsize) /* but has the wrong size */
+            {
+              if(v)
+                fprintf(stdout,"corrupted, erasing.\n");
+              fprintf(stderr,"File %s has unexpected size. Erasing... ",fname);
+              remove(fpath); /* delete file */
+              fprintf(stderr,"done.\n");
+              i--; /* Retry */
+            }
+            else{
+              /* File exists and is of the right size */
+              files[i]=open(fpath,O_RDWR);
+              if(v)
+                fprintf(stdout,"accessed.\n");
+            }
+        }
       else
-	{
-	  if(v)
-	    fprintf(stdout,"exists, inaccessible.\n");
-	  fprintf(stderr,"Error encountered accessing file %s, quitting!\n",fname);
-	  return(1);
-	}
+        {
+          if(v)
+            fprintf(stdout,"exists, inaccessible.\n");
+          fprintf(stderr,"Error encountered accessing file %s, quitting!\n",fname);
+          return(1);
+        }
       /* Finally, when the file is ready, map it to memory */
       if((maps[i]=mmap(NULL,fsize,PROT_READ|PROT_WRITE,MAP_SHARED,files[i],0))==MAP_FAILED)
-	{
-	  fprintf(stderr,"Can't create mapping, quitting\n");
-	  return(1);
-	}
+        {
+          fprintf(stderr,"Can't create mapping, quitting\n");
+          return(1);
+        }
       madvise(maps[i],fsize,MADV_RANDOM);
     }
   free(zeros);
@@ -180,17 +203,15 @@ int main (int argc,char** argv)
 
   /* Create threads */
   struct argw argw[args.threads];
-  int64_t queue[args.threads]; /* Used to stop race condition at last run */
   uint64_t counter=0; /* Keeps track of how many runs processed */
-  uint64_t run=0;
-  pthread_mutex_t lock_iter;
+  uint64_t hits[l];
   pthread_mutex_t lock_rand;
   pthread_mutex_t locks[l]; /* One lock for each file */
-  pthread_mutex_init(&lock_iter,NULL);
   pthread_mutex_init(&lock_rand,NULL);
   for(int i=0;i<l;i++)
     {
       pthread_mutex_init(&locks[i],NULL);
+      hits[i]=0;
     }
   if(v)
     fprintf(stdout,"Starting %hu worker%s:\n",args.threads,args.threads>1?"s":"");
@@ -199,15 +220,14 @@ int main (int argc,char** argv)
   for(uint16_t t=0;t<args.threads;t++)
     {
       if(v)
-	fprintf(stdout,"  - %hu. worker\t... ",t+1);
-      queue[t]=0;
+        fprintf(stdout,"  - %hu. worker\t... ",t+1);
       argw[t]=
         (struct argw) {
-          &lock_iter,
           &lock_rand,
           locks,
           maps,
           &counter,
+          hits,
           args.re_size,
           args.im_size,
           args.re_min,
@@ -218,15 +238,11 @@ int main (int argc,char** argv)
           args.bail,
           args.runs,
           function,
-          optimiser,
-          args.threads,
-          t,
-          queue,
-          &run
+          optimiser
         };
       pthread_create(&thr[t],NULL,worker,(void*)&argw[t]);
       if(v)
-	fprintf(stdout,"done.\n");
+        fprintf(stdout,"done.\n");
     }
 
   if(v)
@@ -241,7 +257,20 @@ int main (int argc,char** argv)
 
   if(v)
     fprintf(stdout,"All workers finished\n");
-
+  if(v)
+    fprintf(stdout,"Hits per file:\n");
+  uint64_t hits_total=0;
+  for(int i=0; i<l; i++)
+    {
+      char fname[STR_MAXLEN];
+      fname[STR_MAXLEN-1]='\0';
+      snprintf(fname,STR_MAXLEN-1,"%lu-%lu",args.iter[i],args.iter[i+1]-1);
+      if(v)
+        printf("  - %d. file (%s):\t %lu hits\n",i+1,fname,hits[i]);
+      hits_total+=hits[i];
+    }
+  fprintf(stdout,"Total hits: %lu\n",hits[0]);
+  
   if(v)
     fprintf(stdout,"Task done, quitting\n");
   /* Clean up */

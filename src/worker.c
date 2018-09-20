@@ -9,33 +9,7 @@
 
 #include "worker.h"
 
-uint64_t check_ctr(uint64_t* ctr, pthread_mutex_t* lock)
-{
-  pthread_mutex_lock(lock);
-  uint64_t r=*ctr;
-  pthread_mutex_unlock(lock);
-  return r;
-}
 
-uint64_t incr_ctr(uint64_t* ctr, pthread_mutex_t* lock)
-{
-  pthread_mutex_lock(lock);
-  uint64_t r=++*ctr;
-  pthread_mutex_unlock(lock);
-  return r;
-}
-
-void quit_thread(uint64_t **buff, uint32_t re_size, uint8_t *dirty_rows)
-{
-  /* We're done, quitting thread */
-  for(uint32_t x=0;x<re_size;x++)
-    {
-      free(buff[x]);
-    }
-  free(buff);
-  free(dirty_rows);
-  pthread_exit(NULL);
-}
 
 void* worker(void *arg_v)
 {
@@ -69,23 +43,19 @@ void* worker(void *arg_v)
       exit(1);
     }
   
-
+  
   
   /* Run until number of runs is reached */
   while(1)
     {
-      uint64_t r=incr_ctr(arg->counter,arg->lock_iter);
-      if(fmod(r,arg->runs/10.0)<1)
-        {
-          printf("Run: %10lu/%10lu\n",r,arg->runs);
-        }
+      
       /* Generate a point that is outside of set */
       long double complex c,Z;
       int8_t inside; /* 0 is no, 1 is yes, -1 is maybe */
+      uint64_t run;
       do
         {
           /* Record positive runs (to avoid race condition at the end) */
-          int64_t run;
           
           /* Use Box-Muller algorithm to get two normally distributed numbers */
           /* and then make one complex number from them */
@@ -99,10 +69,23 @@ void* worker(void *arg_v)
             }
           while(U1==0);
           U2=rand();
-          run=++*(arg->run);
+          run=++*(arg->counter);
           pthread_mutex_unlock(arg->lock_rand);
-              
-        
+          if(run>=arg->runs)
+            {
+              /* We're done, quitting thread */
+              for(uint32_t x=0;x<arg->re_size;x++)
+                {
+                  free(buff[x]);
+                }
+              free(buff);
+              free(dirty_rows);
+              pthread_exit(NULL);
+            }
+          if(fmod(run,arg->runs/10.0)<1)
+            {
+              printf("Run: %10lu/%10lu\n",run,arg->runs);
+            }
           /* Muller-Box Algorithm */
           c=csqrtl(-2.0*clogl(U1*((double)1.0/RAND_MAX)))*cexpl(PI_2_I*(U2*((double)1.0/RAND_MAX)));
           /* c now has Gaussian distribution (on the Gaussian plane) */
@@ -116,60 +99,11 @@ void* worker(void *arg_v)
           
           inside=preiterator(c,arg->function,arg->optimiser,arg->iter[0],arg->iter[l],arg->bail);
           
-          if(check_ctr(arg->counter,arg->lock_iter)>=arg->runs)
-            {
-              if(inside==1)
-                {
-                  for(uint16_t i=0;i<arg->threads;i++)
-                    {
-                      if(arg->queue[i])
-                        {
-                          arg->queue[arg->threadID]=-1;
-                          quit_thread(buff,arg->re_size,dirty_rows);
-                        }
-                    }
-                }
-              else
-                {
-                  arg->queue[arg->threadID]=run;
-                  /* Broadcast retry */
-                  /* Wait for arg->queue to contain  zeros */
-                  uint16_t zeros;
-                  while(1)
-                    {
-                      zeros=0;
-                      for(uint16_t i=0;i<arg->threads;i++)
-                        {
-                          if(arg->queue[i]==0)
-                            {
-                              zeros++;
-                              break;
-                            }
-                        }
-                      if(!zeros)
-                        {
-                          break;
-                        }
-                      /* Wait */
-                    }
-                  /* Is our run earliest? */
-                  for(uint16_t i=0;i<arg->threads;i++)
-                    {
-                      if(i!=arg->threadID&&arg->queue[i]!=-1&&arg->queue[i]<run)
-                        {
-                          quit_thread(buff,arg->re_size,dirty_rows);
-                        }
-                    }
-                }
-            }
+          
         }
       while(inside==1);
-      uint8_t last=0;
-      if(check_ctr(arg->counter,arg->lock_iter)>=arg->runs)
-        {
-          last=1;
-        }
-        
+      
+      
       int64_t idx_x,idx_y; /* buff (2D array) coords */
       
       /* Now we have a point which is outside, can iterate and draw */
@@ -196,7 +130,7 @@ void* worker(void *arg_v)
       uint32_t k;
       for(k=0;i>arg->iter[k+1] && k<l-1;k++);
       pthread_mutex_lock(&arg->locks[k]);
-      
+      arg->hits[k]++;
       for(uint32_t x=0;x< arg->re_size;x++)
         {
           if(dirty_rows[x])
@@ -222,10 +156,6 @@ void* worker(void *arg_v)
                 }
               dirty_rows[x]=0;
             }
-        }
-      if(last)
-        {
-          quit_thread(buff,arg->re_size,dirty_rows);
         }
     }
 }
