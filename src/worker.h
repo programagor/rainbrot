@@ -33,6 +33,10 @@ struct argw
   uint64_t runs;
   long double complex (*function)(long double complex c, long double complex Z);
   int8_t (*optimiser)(long double complex c);
+  long double a_std;
+  long double b_std;
+  long double a_mu;
+  long double b_mu;
 };
 
 #endif

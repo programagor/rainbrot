@@ -46,6 +46,7 @@ int main (int argc,char** argv)
   args.threads = 4;
   args.seed=time(NULL);
   args.function="mandelbrot";
+  args.a_std=-1;
 
   /* Parse command-line arguments */
   argp_parse(&argp, argc, argv, 0, 0, &args);
@@ -74,6 +75,14 @@ int main (int argc,char** argv)
       /* TODO: Implement loading functions from external .o files */
       fprintf(stderr,"Couldn't load file functions/%s.o (not implemented)\n",args.function);
       return(1);
+    }
+  /* If standard deviation and mean of the starting points isn't specified, default to the center of window */
+  if(args.a_std<0)
+    {
+      args.a_std=(args.re_max-args.re_min)/2;
+      args.b_std=(args.im_max-args.im_min)/2;
+      args.a_mu=(args.re_max+args.re_min)/2;
+      args.b_mu=(args.im_max+args.im_min)/2;
     }
 
   /* Initialise unset arguments */
@@ -238,7 +247,11 @@ int main (int argc,char** argv)
           args.bail,
           args.runs,
           function,
-          optimiser
+          optimiser,
+          args.a_std,
+          args.b_std,
+          args.a_mu,
+          args.b_mu
         };
       pthread_create(&thr[t],NULL,worker,(void*)&argw[t]);
       if(v)

@@ -55,7 +55,6 @@ void* worker(void *arg_v)
       uint64_t run;
       do
         {
-          /* Record positive runs (to avoid race condition at the end) */
           
           /* Use Box-Muller algorithm to get two normally distributed numbers */
           /* and then make one complex number from them */
@@ -91,11 +90,7 @@ void* worker(void *arg_v)
           /* c now has Gaussian distribution (on the Gaussian plane) */
               
           /* Scale axis-wise (non-comforming mapping) */
-          /* TODO: Adjustable standard deviation and mean of iterator samples */
-          long double a1, a2, b1, b2; 
-          a1=b1=1;
-          a2=b2=0;
-          c=(creall(c)*a1+a2)+((long double complex)I)*(cimagl(c)*b1+b2);
+          c=(creall(c)*arg->a_std+arg->a_mu)+((long double complex)I)*(cimagl(c)*arg->b_std+arg->b_mu);
           
           inside=preiterator(c,arg->function,arg->optimiser,arg->iter[0],arg->iter[l],arg->bail);
           

@@ -21,7 +21,10 @@ struct arguments
   uint16_t threads;
   unsigned int seed;
   char* function;
-  
+  long double a_std;
+  long double b_std;
+  long double a_mu;
+  long double b_mu;
 };
 
 extern struct argp argp;
