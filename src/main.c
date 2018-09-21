@@ -288,8 +288,10 @@ int main (int argc,char** argv)
     fprintf(stdout,"Task done, quitting\n");
   /* Clean up */
 
+  pthread_mutex_destroy(lock_rand);
   for(int i=0;i<l;i++)
     {
+      pthread_mutex_destroy(locks[i]);
       msync(maps[i],fsize,MS_SYNC);
       munmap(maps[i],fsize);
       close(files[i]);
