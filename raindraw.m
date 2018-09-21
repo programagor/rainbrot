@@ -5,7 +5,7 @@ for i=1:length(iters)-1
     fprintf('[%s]   Opening file...\n',datetime);
     f=fopen(sprintf('%s/%d-%d',dir,iters(i),iters(i+1)-1));
     fprintf('[%s]   Reading file...\n',datetime);
-    t=fread(f,dim,'uint64');
+    t=fread(f,dim([2,1]),'uint64');
     fprintf('[%s]   Closing file...\n',datetime);
     fclose(f);
     fprintf('[%s]   Applying transform...\n',datetime);

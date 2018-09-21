@@ -59,7 +59,7 @@ int main (int argc,char** argv)
       function=mandelbrot;
       optimiser=mandelbrot_optimiser;
     }
-  else if(strcmp(args.function,"mandelbrot")==0)
+  else if(strcmp(args.function,"ship")==0)
     {
       function=ship;
       optimiser=no_optimiser;

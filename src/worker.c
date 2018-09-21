@@ -116,7 +116,7 @@ void* worker(void *arg_v)
           
           /* increment buffer */
           idx_x=round((creall(Z) - arg->re_min)*( arg->re_size -1)/(arg->re_max-arg->re_min));
-          idx_y=round((cimagl(Z) - arg->im_min)*( arg->im_size -1)/(arg->im_max-arg->im_min));
+          idx_y=arg->im_size - round((cimagl(Z) - arg->im_min)*( arg->im_size -1)/(arg->im_max-arg->im_min));
                   
           if(idx_x>=0 && idx_x < arg->re_size && idx_y>=0 && idx_y < arg->im_size)
             {
