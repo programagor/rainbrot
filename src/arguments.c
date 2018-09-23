@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <math.h>
 
 #include "arguments.h"
 #include "list_tools.h"
@@ -17,10 +18,11 @@ static struct argp_option options[] =
   {"window",'w',"RE_MIN,IM_MIN,RE_MAX,IM_MAX",0,"Displayed area of the Gauss plane",1},
   {"iter",'i',"ITER1,ITER2[,...]",0,"Bands of iteration depths",1},
   {"bail",'b',"BAILOUT",0,"Maximal absolute value, which will cause a point to be discarded after reaching it",1},
-  {"runs",'r',"RUNS",0,"Number of starting points to be iterated (O means until stop via Ctrl+C)",1},
+  {"runs",'r',"RUNS",0,"Number of starting points to be iterated (0 means until stop via ^C)",1},
   {"threads",'t',"THREADS",0,"Number of threads to run the iterator in",1},
   {"seed",'x',"SEED",0,"Starting seed for the random number generator",1},
   {"function",'f',"{mandelbrot,ship,custom}",0,"",1},
+  {"distribution",'d',"RE_MU,RE_STD,IM_MU,IM_STD",0,"Parameters of Gaussian distribution of starting points",1},
   {0}
 };
 
@@ -40,16 +42,16 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
     break;
   case 's':
     if(2!=sscanf(arg,"%ux%u",
-		 &(arguments->re_size),
-		 &(arguments->im_size)))
+                 &(arguments->re_size),
+                 &(arguments->im_size)))
       argp_usage(state);
     break;
   case 'w':
     if(4!=sscanf(arg,"%lf,%lf,%lf,%lf",
-		 &(arguments->re_min),
-		 &(arguments->im_min),
-		 &(arguments->re_max),
-		 &(arguments->im_max)))
+                 &(arguments->re_min),
+                 &(arguments->im_min),
+                 &(arguments->re_max),
+                 &(arguments->im_max)))
       argp_usage(state);
     break;
   case 'i':
@@ -57,35 +59,35 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
     /* If we don't have at least 2 valid values, quit */
     if(!arguments->iter||!arguments->iter[0]||!arguments->iter[1])
       {
-	free(arguments->iter);
-	argp_usage(state);
+        free(arguments->iter);
+        argp_usage(state);
       }
     sort_list(arguments->iter);
     break;
   case 'b':
     if(1!=sscanf(arg,"%lf",
-		 &(arguments->bail)))
+                 &(arguments->bail)))
       argp_usage(state);
     break;
   case 'r':
     if(1!=sscanf(arg,"%lu",
-		 &(arguments->runs)))
+                 &(arguments->runs)))
       argp_usage(state);
     break;
   case 't':
     if(1!=sscanf(arg,"%hu",
-		 &(arguments->threads)))
+                 &(arguments->threads)))
       argp_usage(state);
     break;
   case 'x':
     if(1!=sscanf(arg,"%u",
-		 &(arguments->seed)))
+                 &(arguments->seed)))
       argp_usage(state);
     break;
   case ARGP_KEY_ARG:
     if (state->arg_num >= 1)
       {
-	argp_usage(state);
+        argp_usage(state);
       }
     arguments->args[state->arg_num]=arg;
     break;
@@ -95,10 +97,20 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
     else
       argp_usage(state);
     break;
+  case 'd':
+    if(4!=sscanf(arg,"%Lf,%Lf,%Lf,%Lf",
+                 &(arguments->a_mu),
+                 &(arguments->a_std),
+                 &(arguments->b_mu),
+                 &(arguments->b_std)))
+      argp_usage(state);
+    else
+      arguments->a_mu=fabsl(arguments->a_mu);
+    break;
     //  case ARGP_KEY_END:
     //    if (state->arg_num < 0)
     //      {
-    //	argp_usage(state);
+    //        argp_usage(state);
     //      }
     //    break;
   default:

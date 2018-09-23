@@ -36,10 +36,10 @@ int main (int argc,char** argv)
   args.verbose = 0;
   args.re_size = 400;
   args.im_size = 400;
-  args.re_min = -1;
-  args.re_max =  1;
-  args.im_min = -1;
-  args.im_max =  1;
+  args.re_min = -2;
+  args.re_max =  2;
+  args.im_min = -2;
+  args.im_max =  2;
   args.iter = NULL;
   args.bail = 40;
   args.runs = 10000000L;
@@ -93,7 +93,7 @@ int main (int argc,char** argv)
   /* Folder first */
   char dirname[STR_MAXLEN];
   dirname[STR_MAXLEN-1]='\0';
-  snprintf(dirname,STR_MAXLEN-1,"%s_%ux%u(%lf+%lfi_%lf+%lfi)-%lf",
+  snprintf(dirname,STR_MAXLEN-1,"%s_%ux%u_(%lg)+(%lgi)_(%lg)+(%lgi)-%lg",
            args.function,
            args.re_size,
            args.im_size,
@@ -149,7 +149,7 @@ int main (int argc,char** argv)
       char fpath[2*STR_MAXLEN]; /* filename with path */
       fname[STR_MAXLEN-1]='\0';
       fpath[2*STR_MAXLEN-1]='\0';
-      snprintf(fname,STR_MAXLEN-1,"%lu-%lu",args.iter[i],args.iter[i+1]-1);
+      snprintf(fname,STR_MAXLEN-1,"%lu-%lu.rain",args.iter[i],args.iter[i+1]-1);
       snprintf(fpath,2*STR_MAXLEN-1,"%s/%s",dirname,fname);
       if(v)
         fprintf(stdout,"  - %u. file (%s)\t... ",i+1,fname);

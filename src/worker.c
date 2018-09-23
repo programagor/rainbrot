@@ -87,7 +87,7 @@ void* worker(void *arg_v)
               char timestr[20];
               time_t now = time (0);
               strftime (timestr, 100, "%Y-%m-%d %H:%M:%S", localtime (&now));
-              printf("[%s] Run: %10lu/%10lu\n",timestr,run,arg->runs);
+              printf("[%s] Run: %10lu/%10lu (%3.0f%%)\n",timestr,run,arg->runs,run*100.0/arg->runs);
             }
           /* Muller-Box Algorithm */
           c=csqrtl(-2.0*clogl(U1*((double)1.0/RAND_MAX)))*cexpl(PI_2_I*(U2*((double)1.0/RAND_MAX)));

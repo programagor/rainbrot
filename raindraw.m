@@ -3,7 +3,7 @@ function pic=raindraw(dir, iters, dim, map)
 for i=1:length(iters)-1
     fprintf('[%s] Iteration %d (%d-%d)\n',datetime,i,iters(i),iters(i+1)-1);
     fprintf('[%s]   Opening file...\n',datetime);
-    f=fopen(sprintf('%s/%d-%d',dir,iters(i),iters(i+1)-1));
+    f=fopen(sprintf('%s/%d-%d.rain',dir,iters(i),iters(i+1)-1));
     fprintf('[%s]   Reading file...\n',datetime);
     t=fread(f,dim([2,1]),'uint64');
     fprintf('[%s]   Closing file...\n',datetime);
@@ -13,7 +13,10 @@ for i=1:length(iters)-1
     fun=@(x)sqrt(-x.*(x-2));
     %fun=@(x)cos(asin(1-x));
     %t=t+t(end:-1:1,:); %mirroring
-    t=fun(t./max(max(t)));
+    m=max(max(t));
+    for j=1:size(t,1)
+        t(j,:)=fun(t(j,:)./m);
+    end
 %    for c=1:3
 %        pic(:,:,c)=pic(:,:,c)+t.*map(c,i);
 %    end
