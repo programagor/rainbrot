@@ -10,10 +10,20 @@
 
 #include "worker.h"
 
-
+void worker_cleanup(void *arg_v)
+{
+  struct argw *arg=(struct argw*)arg_v;
+  for(uint32_t x=0;x<arg->re_size;x++)
+    {
+      free(arg->buff[x]);
+    }
+  free(arg->buff);
+  free(arg->dirty_rows);
+}
 
 void* worker(void *arg_v)
 {
+  pthread_cleanup_push(worker_cleanup,arg_v);
   struct argw *arg=(struct argw*)arg_v;
   
   uint32_t l;
@@ -26,14 +36,15 @@ void* worker(void *arg_v)
       fprintf(stderr,"Can't allocate space for buffer array\n");
       exit(1);
     }
+  arg->buff=buff;
   for(uint32_t x=0;x<arg->re_size;x++)
     {
       buff[x]=calloc(arg->im_size,sizeof(uint64_t));
       if(!buff[x])
-    {
-      fprintf(stderr,"Can't allocate space for buffer array\n");
-      exit(1);
-    }
+        {
+          fprintf(stderr,"Can't allocate space for buffer array\n");
+          exit(1);
+        }
     }
     
   /* Keep track of which rows were written to */
@@ -43,7 +54,7 @@ void* worker(void *arg_v)
       fprintf(stderr,"Can't allocate space for dirty rows marker, quitting\n");
       exit(1);
     }
-  
+  arg->dirty_rows=dirty_rows;
   
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
   /* Run until number of runs is reached */
@@ -75,12 +86,6 @@ void* worker(void *arg_v)
           if(run>=arg->runs)
             {
               /* We're done, quitting thread */
-              for(uint32_t x=0;x<arg->re_size;x++)
-                {
-                  free(buff[x]);
-                }
-              free(buff);
-              free(dirty_rows);
               pthread_exit(NULL);
             }
           if(fmod(run,arg->runs/100.0)<1)
@@ -147,7 +152,6 @@ void* worker(void *arg_v)
         }
       pthread_mutex_unlock(&arg->locks[k]);
       pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-      
       for(uint32_t x=0;x< arg->re_size;x++)
         {
           if(dirty_rows[x])
@@ -160,6 +164,7 @@ void* worker(void *arg_v)
             }
         }
     }
+    pthread_cleanup_pop(0);
 }
 
 int8_t preiterator

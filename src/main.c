@@ -251,7 +251,9 @@ int main (int argc,char** argv)
           args.a_std,
           args.b_std,
           args.a_mu,
-          args.b_mu
+          args.b_mu,
+          NULL,
+          NULL
         };
       pthread_create(&thr[t],NULL,worker,(void*)&argw[t]);
       if(v)

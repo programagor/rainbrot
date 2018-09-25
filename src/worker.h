@@ -37,6 +37,8 @@ struct argw
   long double b_std;
   long double a_mu;
   long double b_mu;
+  uint64_t **buff;
+  uint8_t *dirty_rows;
 };
 
 #endif
