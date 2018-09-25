@@ -45,11 +45,10 @@ void* worker(void *arg_v)
     }
   
   
-  
+  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
   /* Run until number of runs is reached */
   while(1)
     {
-      
       /* Generate a point that is outside of set */
       long double complex c,Z;
       int8_t inside; /* 0 is no, 1 is yes, -1 is maybe */
@@ -62,6 +61,7 @@ void* worker(void *arg_v)
           
           int U1,U2;
           /* rand is not thread safe, needs locking */
+          pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
           pthread_mutex_lock(arg->lock_rand);
           do
             {
@@ -71,6 +71,7 @@ void* worker(void *arg_v)
           U2=rand();
           run=++*(arg->counter);
           pthread_mutex_unlock(arg->lock_rand);
+          pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
           if(run>=arg->runs)
             {
               /* We're done, quitting thread */
@@ -98,10 +99,10 @@ void* worker(void *arg_v)
           
           inside=preiterator(c,arg->function,arg->optimiser,arg->iter[0],arg->iter[l],arg->bail);
           
+          pthread_testcancel();
           
         }
       while(inside==1);
-      
       
       int64_t idx_x,idx_y; /* buff (2D array) coords */
       
@@ -128,6 +129,7 @@ void* worker(void *arg_v)
       /* Which buffer does this go to? */
       uint32_t k;
       for(k=0;i>arg->iter[k+1] && k<l-1;k++);
+      pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
       pthread_mutex_lock(&arg->locks[k]);
       arg->hits[k]++;
       for(uint32_t x=0;x< arg->re_size;x++)
@@ -144,6 +146,7 @@ void* worker(void *arg_v)
             }
         }
       pthread_mutex_unlock(&arg->locks[k]);
+      pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
       
       for(uint32_t x=0;x< arg->re_size;x++)
         {
