@@ -23,7 +23,6 @@ void worker_cleanup(void *arg_v)
 
 void* worker(void *arg_v)
 {
-  pthread_cleanup_push(worker_cleanup,arg_v);
   struct argw *arg=(struct argw*)arg_v;
   
   uint32_t l;
@@ -56,6 +55,7 @@ void* worker(void *arg_v)
     }
   arg->dirty_rows=dirty_rows;
   
+  pthread_cleanup_push(worker_cleanup,arg_v);
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
   /* Run until number of runs is reached */
   while(1)
