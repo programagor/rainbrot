@@ -79,8 +79,8 @@ int main (int argc,char** argv)
   /* If standard deviation and mean of the starting points isn't specified, default to the center of window */
   if(args.a_std<0)
     {
-      args.a_std=(args.re_max-args.re_min)/2;
-      args.b_std=(args.im_max-args.im_min)/2;
+      args.a_std=(args.re_max-args.re_min);
+      args.b_std=(args.im_max-args.im_min);
       args.a_mu=(args.re_max+args.re_min)/2;
       args.b_mu=(args.im_max+args.im_min)/2;
     }

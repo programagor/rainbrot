@@ -8,13 +8,14 @@ for i=1:length(iters)-1
     t=fread(f,dim([2,1]),'uint64');
     fprintf('[%s]   Closing file...\n',datetime);
     fclose(f);
+    fprintf('[%s]   Finding maximum...\n',datetime);
+    m=max(max(t));
     fprintf('[%s]   Applying transform...\n',datetime);
     %fun=@(x)sin(x*pi/2);
     fun=@(x)sqrt(-x.*(x-2));
     %fun=@(x)cos(asin(1-x));
     %t=t+t(end:-1:1,:); %mirroring
-    m=max(max(t));
-    for j=1:size(t,1)
+    for j=1:size(t,1) %save memory by considering 1 line at a time
         t(j,:)=fun(t(j,:)./m);
     end
 %    for c=1:3
