@@ -18,7 +18,7 @@ int8_t preiterator(
 struct argw
 {
   pthread_mutex_t *lock_rand;
-  pthread_mutex_t *locks;
+  pthread_mutex_t **locks;
   uint64_t **maps;
   uint64_t *counter;
   uint64_t *hits;

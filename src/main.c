@@ -215,11 +215,15 @@ int main (int argc,char** argv)
   uint64_t counter=0; /* Keeps track of how many runs processed */
   uint64_t hits[l];
   pthread_mutex_t lock_rand;
-  pthread_mutex_t locks[l]; /* One lock for each file */
+  pthread_mutex_t *locks[l]; /* One lock for each file */
   pthread_mutex_init(&lock_rand,NULL);
   for(int i=0;i<l;i++)
     {
-      pthread_mutex_init(&locks[i],NULL);
+      locks[i]=malloc(args.re_size*sizeof(pthread_mutex_t));
+      for(uint32_t x=0;x<args.re_size;x++)
+        {
+          pthread_mutex_init(&locks[i][x],NULL);
+        }
       hits[i]=0;
     }
   if(v)
@@ -293,7 +297,11 @@ int main (int argc,char** argv)
   pthread_mutex_destroy(&lock_rand);
   for(int i=0;i<l;i++)
     {
-      pthread_mutex_destroy(&locks[i]);
+      for(uint32_t x=0;x<args.re_size;x++)
+        {
+          pthread_mutex_destroy(&locks[i][x]);
+        }
+      free(locks[i]);
       msync(maps[i],fsize,MS_SYNC);
       munmap(maps[i],fsize);
       close(files[i]);

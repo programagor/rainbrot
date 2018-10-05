@@ -140,7 +140,7 @@ void* worker(void *arg_v)
         {
           if(dirty_rows[x])
             {
-              pthread_mutex_lock(&arg->locks[k]);
+              pthread_mutex_lock(&arg->locks[k][x]);
               for(uint32_t y=0;y< arg->im_size;y++)
                 {
                   if(buff[x][y])
@@ -148,7 +148,7 @@ void* worker(void *arg_v)
                       arg->maps[k][arg->im_size*x+y]+=buff[x][y];
                     }
                 }
-              pthread_mutex_unlock(&arg->locks[k]);
+              pthread_mutex_unlock(&arg->locks[k][x]);
             }
         }
       pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
