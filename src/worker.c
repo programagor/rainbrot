@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -5,6 +6,7 @@
 #include <math.h>
 #include <complex.h>
 #include <time.h>
+#include <sys/mman.h>
 
 #define PI_2_I 3.141592653589793238462643383279502884L*2.0*I
 
@@ -163,6 +165,7 @@ void* worker(void *arg_v)
                       arg->maps[k][im_size*x+y]+=buff[x][y];
                     }
                 }
+              madvise(&(arg->maps[k][im_size*x]),sizeof(uint64_t)*re_size,MADV_DONTNEED);
               pthread_mutex_unlock(&arg->locks[k][x]);
             }
         }
