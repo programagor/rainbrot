@@ -171,9 +171,14 @@ void* worker(void *arg_v)
         {
           if(dirty_rows[x])
             {
-              for(uint32_t y=0;y< im_size;y++)
+              /* Rather than clearing the row, allocate it again */
+              /* This way, the row takes up only virtual memory if it isn't used. */
+              free(buff[x]);
+              buff[x]=calloc(im_size,sizeof(uint64_t));
+              if(!buff[x])
                 {
-                  buff[x][y]=0;
+                  fprintf(stderr,"Can't allocate space for buffer array\n");
+                  exit(1);
                 }
               dirty_rows[x]=0;
             }
