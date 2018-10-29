@@ -25,20 +25,35 @@ void* worker(void *arg_v)
 {
   struct argw *arg=(struct argw*)arg_v;
   
+  const uint32_t re_size = arg->re_size;
+  const uint32_t im_size = arg->im_size;
+  const double re_min = arg->re_min;
+  const double re_max = arg->re_max;
+  const double im_min = arg->im_min;
+  const double im_max = arg->im_max;
+  const double bail = arg->bail;
+  const uint64_t runs = arg->runs;
+  const long double a_std = arg->a_std;
+  const long double b_std = arg->b_std;
+  const long double a_mu = arg->a_mu;
+  const long double b_mu = arg->b_mu;
+  long double complex (*const function)(long double complex Z, const long double complex c) = arg->function;
+  int8_t (*const optimiser)(const long double complex c) = arg->optimiser;
+
   uint32_t l;
   for(l=1;arg->iter[l+1];l++); /* how many channels */
 
   /* Create thread-local buffer */
-  uint64_t **buff=malloc(arg->re_size*sizeof(uint64_t*));
+  uint64_t **buff=malloc(re_size*sizeof(uint64_t*));
   if(!buff)
     {
       fprintf(stderr,"Can't allocate space for buffer array\n");
       exit(1);
     }
   arg->buff=buff;
-  for(uint32_t x=0;x<arg->re_size;x++)
+  for(uint32_t x=0;x<re_size;x++)
     {
-      buff[x]=calloc(arg->im_size,sizeof(uint64_t));
+      buff[x]=calloc(im_size,sizeof(uint64_t));
       if(!buff[x])
         {
           fprintf(stderr,"Can't allocate space for buffer array\n");
@@ -47,7 +62,7 @@ void* worker(void *arg_v)
     }
     
   /* Keep track of which rows were written to */
-  uint8_t *dirty_rows=calloc(arg->re_size,sizeof(uint8_t));
+  uint8_t *dirty_rows=calloc(re_size,sizeof(uint8_t));
   if(!dirty_rows)
     {
       fprintf(stderr,"Can't allocate space for dirty rows marker, quitting\n");
@@ -83,26 +98,26 @@ void* worker(void *arg_v)
           run=++*(arg->counter);
           pthread_mutex_unlock(arg->lock_rand);
           pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-          if(run>=arg->runs)
+          if(run>=runs)
             {
               /* We're done, quitting thread */
               pthread_exit(NULL);
             }
-          if(fmod(run,arg->runs/100.0)<1)
+          if(fmod(run,runs/100.0)<1)
             {
               char timestr[20];
               time_t now = time (0);
               strftime (timestr, 100, "%Y-%m-%d %H:%M:%S", localtime (&now));
-              printf("[%s] Run: %10lu/%10lu (%3.0f%%)\n",timestr,run,arg->runs,run*100.0/arg->runs);
+              printf("[%s] Run: %10lu/%10lu (%3.0f%%)\n",timestr,run,runs,run*100.0/runs);
             }
           /* Muller-Box Algorithm */
           c=csqrtl(-2.0*clogl(U1*((double)1.0/RAND_MAX)))*cexpl(PI_2_I*(U2*((double)1.0/RAND_MAX)));
           /* c now has Gaussian distribution (on the Gaussian plane) */
               
           /* Scale axis-wise (non-comforming mapping) */
-          c=(creall(c)*arg->a_std+arg->a_mu)+((long double complex)I)*(cimagl(c)*arg->b_std+arg->b_mu);
+          c=(creall(c)*a_std+a_mu)+((long double complex)I)*(cimagl(c)*b_std+b_mu);
           
-          inside=preiterator(c,arg->function,arg->optimiser,arg->iter[0],arg->iter[l],arg->bail);
+          inside=preiterator(c,function,optimiser,arg->iter[0],arg->iter[l],bail);
           
           pthread_testcancel();
           
@@ -114,16 +129,16 @@ void* worker(void *arg_v)
       /* Now we have a point which is outside, can iterate and draw */
       Z=c;
       uint64_t i;
-      for(i=0;abs(Z)<arg->bail&&i<arg->iter[l];i++)
+      for(i=0;abs(Z)<bail&&i<arg->iter[l];i++)
         {
-          Z=arg->function(Z,c); /* Iterate */
+          Z=function(Z,c); /* Iterate */
           
           
           /* increment buffer */
-          idx_x=round((creall(Z) - arg->re_min)*( arg->re_size -1)/(arg->re_max-arg->re_min));
-          idx_y=arg->im_size - round((cimagl(Z) - arg->im_min)*( arg->im_size -1)/(arg->im_max-arg->im_min));
+          idx_x=round((creall(Z) - re_min)*( re_size -1)/(re_max-re_min));
+          idx_y=im_size - round((cimagl(Z) - im_min)*( im_size -1)/(im_max-im_min));
                   
-          if(idx_x>=0 && idx_x < arg->re_size && idx_y>=0 && idx_y < arg->im_size)
+          if(idx_x>=0 && idx_x < re_size && idx_y>=0 && idx_y < im_size)
             {
               buff[idx_x][idx_y]++;
               dirty_rows[idx_x]=1;
@@ -136,27 +151,27 @@ void* worker(void *arg_v)
       for(k=0;i>arg->iter[k+1] && k<l-1;k++);
       pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
       arg->hits[k]++;
-      for(uint32_t x=0;x< arg->re_size;x++)
+      for(uint32_t x=0;x< re_size;x++)
         {
           if(dirty_rows[x])
             {
               pthread_mutex_lock(&arg->locks[k][x]);
-              for(uint32_t y=0;y< arg->im_size;y++)
+              for(uint32_t y=0;y< im_size;y++)
                 {
                   if(buff[x][y])
                     {
-                      arg->maps[k][arg->im_size*x+y]+=buff[x][y];
+                      arg->maps[k][im_size*x+y]+=buff[x][y];
                     }
                 }
               pthread_mutex_unlock(&arg->locks[k][x]);
             }
         }
       pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-      for(uint32_t x=0;x< arg->re_size;x++)
+      for(uint32_t x=0;x< re_size;x++)
         {
           if(dirty_rows[x])
             {
-              for(uint32_t y=0;y< arg->im_size;y++)
+              for(uint32_t y=0;y< im_size;y++)
                 {
                   buff[x][y]=0;
                 }
@@ -169,22 +184,22 @@ void* worker(void *arg_v)
 
 int8_t preiterator
 (
-  long double complex c,
-  long double complex (*function)(long double complex c, long double complex Z),
-  int8_t (*optimiser)(long double complex c),
-  uint64_t iter_min,
-  uint64_t iter_max,
-  double bail
+  const long double complex c,
+  long double complex (*const function)(long double complex Z, const long double complex c),
+  int8_t (*const optimiser)(const long double complex c),
+  const uint64_t iter_min,
+  const uint64_t iter_max,
+  const double bail
 )
 {
-  int8_t res=optimiser(c);
+  const int8_t res=optimiser(c);
   if(res==1)
     {
       return(res); /* We know c is inside, can return */
     }
   /* res== 0: We know c is outside, but does it last long enough? */
   /* res==-1: We don't know whether c is inside or outside, need full iteration cycle */
-  uint64_t iter=(res==0?iter_min:iter_max);
+  const uint64_t iter=(res==0?iter_min:iter_max);
   uint64_t i;
   long double complex Z=c;
   for(i=0;i<iter;i++)

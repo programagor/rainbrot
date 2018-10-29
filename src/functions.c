@@ -10,17 +10,17 @@ long double complex no_mapping(long double complex Z)
 
 
 
-long double complex mandelbrot(long double complex Z, long double complex c)
+long double complex mandelbrot(long double complex Z, const long double complex c)
 {
   return(Z*Z+c);
 }
 
-long double complex ship(long double complex Z, long double complex c)
+long double complex ship(long double complex Z, const long double complex c)
 {
   return(cpowl(cabsl(creall(Z))+cabsl(cimagl(Z))*I,2)+c);
 }
 
-int8_t mandelbrot_optimiser(long double complex Z)
+int8_t mandelbrot_optimiser(const long double complex Z)
 {
   /* Outside of the 2-disk */
   if(cabs(Z)>2) return(0);
