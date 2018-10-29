@@ -205,7 +205,7 @@ int main (int argc,char** argv)
           fprintf(stderr,"Can't create mapping, quitting\n");
           return(1);
         }
-      madvise(maps[i],fsize,MADV_RANDOM);
+      madvise(maps[i],fsize,MADV_DONTNEED);
     }
   free(zeros);
   /* Now, everything is ready. Let's roll! */
