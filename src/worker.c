@@ -40,7 +40,7 @@ void* worker(void *arg_v)
   const long double a_mu = arg->a_mu;
   const long double b_mu = arg->b_mu;
   long double complex (*const function)(long double complex Z, const long double complex c) = arg->function;
-  int8_t (*const optimiser)(const long double complex c) = arg->optimiser;
+  int8_t (*const optimiser)(const long double complex c) = arg->optimiser; /* 0 is no, 1 is yes, -1 is maybe */
 
   uint32_t l;
   for(l=1;arg->iter[l+1];l++); /* how many channels */
@@ -79,7 +79,7 @@ void* worker(void *arg_v)
     {
       /* Generate a point that is outside of set */
       long double complex c,Z;
-      int8_t inside; /* 0 is no, 1 is yes, -1 is maybe */
+      uint64_t target_iter;
       uint64_t run;
       do
         {
@@ -119,19 +119,19 @@ void* worker(void *arg_v)
           /* Scale axis-wise (non-comforming mapping) */
           c=(creall(c)*a_std+a_mu)+((long double complex)I)*(cimagl(c)*b_std+b_mu);
           
-          inside=preiterator(c,function,optimiser,arg->iter[0],arg->iter[l],bail);
+          target_iter=preiterator(c,function,optimiser,arg->iter[0],arg->iter[l],bail);
           
           pthread_testcancel();
           
         }
-      while(inside==1);
+      while(target_iter==0);
       
       int64_t idx_x,idx_y; /* buff (2D array) coords */
       
       /* Now we have a point which is outside, can iterate and draw */
       Z=c;
       uint64_t i;
-      for(i=0;abs(Z)<bail&&i<arg->iter[l];i++)
+      for(i=0;i<target_iter;i++)
         {
           Z=function(Z,c); /* Iterate */
           
@@ -190,7 +190,7 @@ void* worker(void *arg_v)
     pthread_cleanup_pop(0);
 }
 
-int8_t preiterator
+uint64_t preiterator
 (
   const long double complex c,
   long double complex (*const function)(long double complex Z, const long double complex c),
@@ -203,7 +203,7 @@ int8_t preiterator
   const int8_t res=optimiser(c);
   if(res==1)
     {
-      return(res); /* We know c is inside, can return */
+      return(0); /* We know c is inside, can return */
     }
   /* res== 0: We know c is outside, but does it last long enough? */
   /* res==-1: We don't know whether c is inside or outside, need full iteration cycle */
@@ -213,10 +213,10 @@ int8_t preiterator
   for(i=0;i<iter;i++)
     {
       Z=function(Z,c);
-      if(cabs(Z)>bail)
+      if(cabsl(Z)>bail)
         {
-          return(i<iter_min?1:0);
+          return(i<iter_min?0:i);
         }
     }
-  return(1);
+  return(0);
 }
