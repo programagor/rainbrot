@@ -12,16 +12,12 @@
 
 #include "worker.h"
 
+/*
 void worker_cleanup(void *arg_v)
 {
-  struct argw *arg=(struct argw*)arg_v;
-  for(uint32_t x=0;x<arg->re_size;x++)
-    {
-      free(arg->buff[x]);
-    }
-  free(arg->buff);
-  free(arg->dirty_rows);
+
 }
+*/
 
 void* worker(void *arg_v)
 {
@@ -44,35 +40,8 @@ void* worker(void *arg_v)
 
   uint32_t l;
   for(l=1;arg->iter[l+1];l++); /* how many channels */
-
-  /* Create thread-local buffer */
-  uint64_t **buff=malloc(re_size*sizeof(uint64_t*));
-  if(!buff)
-    {
-      fprintf(stderr,"Can't allocate space for buffer array\n");
-      exit(1);
-    }
-  arg->buff=buff;
-  for(uint32_t x=0;x<re_size;x++)
-    {
-      buff[x]=calloc(im_size,sizeof(uint64_t));
-      if(!buff[x])
-        {
-          fprintf(stderr,"Can't allocate space for buffer array\n");
-          exit(1);
-        }
-    }
-    
-  /* Keep track of which rows were written to */
-  uint8_t *dirty_rows=calloc(re_size,sizeof(uint8_t));
-  if(!dirty_rows)
-    {
-      fprintf(stderr,"Can't allocate space for dirty rows marker, quitting\n");
-      exit(1);
-    }
-  arg->dirty_rows=dirty_rows;
   
-  pthread_cleanup_push(worker_cleanup,arg_v);
+  //pthread_cleanup_push(worker_cleanup,arg_v);
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
   /* Run until number of runs is reached */
   while(1)
@@ -126,12 +95,18 @@ void* worker(void *arg_v)
         }
       while(target_iter==0);
       
-      int64_t idx_x,idx_y; /* buff (2D array) coords */
+      int64_t idx_x,idx_y; /* pixel coords */
       
       /* Now we have a point which is outside, can iterate and draw */
+
+      /* Which buffer does this go to? */
+      uint32_t k;
+      for(k=0;target_iter>arg->iter[k+1] && k<l-1;k++);
+      
+      
       Z=c;
-      uint64_t i;
-      for(i=0;i<target_iter;i++)
+      pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
+      for(uint64_t i=0;i<target_iter;i++)
         {
           Z=function(Z,c); /* Iterate */
           
@@ -142,52 +117,17 @@ void* worker(void *arg_v)
                   
           if(idx_x>=0 && idx_x < re_size && idx_y>=0 && idx_y < im_size)
             {
-              buff[idx_x][idx_y]++;
-              dirty_rows[idx_x]=1;
+              pthread_mutex_lock(&arg->locks[k][idx_x]);
+              arg->maps[k][im_size*idx_x+idx_y]++;
+              pthread_mutex_unlock(&arg->locks[k][idx_x]);
             }
         }
-      
-      
-      /* Which buffer does this go to? */
-      uint32_t k;
-      for(k=0;i>arg->iter[k+1] && k<l-1;k++);
-      pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
       arg->hits[k]++;
-      for(uint32_t x=0;x< re_size;x++)
-        {
-          if(dirty_rows[x])
-            {
-              pthread_mutex_lock(&arg->locks[k][x]);
-              for(uint32_t y=0;y< im_size;y++)
-                {
-                  if(buff[x][y])
-                    {
-                      arg->maps[k][im_size*x+y]+=buff[x][y];
-                    }
-                }
-              madvise(&(arg->maps[k][im_size*x]),sizeof(uint64_t)*re_size,MADV_DONTNEED);
-              pthread_mutex_unlock(&arg->locks[k][x]);
-            }
-        }
       pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-      for(uint32_t x=0;x< re_size;x++)
-        {
-          if(dirty_rows[x])
-            {
-              /* Rather than clearing the row, allocate it again */
-              /* This way, the row takes up only virtual memory if it isn't used. */
-              free(buff[x]);
-              buff[x]=calloc(im_size,sizeof(uint64_t));
-              if(!buff[x])
-                {
-                  fprintf(stderr,"Can't allocate space for buffer array\n");
-                  exit(1);
-                }
-              dirty_rows[x]=0;
-            }
-        }
+      
     }
-    pthread_cleanup_pop(0);
+
+    //pthread_cleanup_pop(0);
 }
 
 uint64_t preiterator
