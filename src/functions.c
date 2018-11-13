@@ -1,6 +1,4 @@
 #include <stdint.h>
-#include <math.h>
-#include <complex.h>
 
 #include <mpfr.h>
 
@@ -46,12 +44,6 @@ void mandelbrot(mpfr_t *Z, const mpfr_t *c, mpfr_t *param, mpfr_t *temp)
 
 void ship(mpfr_t *Z, const mpfr_t *c, mpfr_t *param, mpfr_t *temp)
 {
-  // Z=(abs(real(Z))+abs(imag(Z))*i)+C
-  // C=a+bi
-  // Z=c+di
-  // (abs(c)+abs(d)i)^2+a+bi=
-  // abs(c)^2+2*abs(c)*abs(d)*i-abs(d)^2+a+bi=
-  // (a+abs(c)^2-abs(d)^2)+(b+2*abs(c)*abs(d))i
   
   mpfr_abs(Z[0],Z[0],MPFR_RNDN);
   mpfr_abs(Z[1],Z[1],MPFR_RNDN);
@@ -59,8 +51,9 @@ void ship(mpfr_t *Z, const mpfr_t *c, mpfr_t *param, mpfr_t *temp)
   mandelbrot(Z, c, param, temp);
 }
 
-int8_t mandelbrot_optimiser(const long double complex Z)
+int8_t mandelbrot_optimiser(const mpfr_t *c, mpfr_t *param, mpfr_t *temp)
 {
+  
   /* Outside of the 2-disk */
   if(cabs(Z)>2) return(0);
   

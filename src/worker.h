@@ -32,7 +32,7 @@ struct argw
   double bail;
   uint64_t runs;
   void (*function)(mpfr_t *Z, const mpfr_t *c, mpfr_t *param, mpfr_t *temp);
-  int8_t (*optimiser)(const long double complex c);
+  int8_t (*optimiser)(const mpfr_t *c, mpfr_t *param, mpfr_t *temp);
   long double a_std;
   long double b_std;
   long double a_mu;

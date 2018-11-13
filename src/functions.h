@@ -1,17 +1,14 @@
-#include <math.h>
-#include <complex.h>
-
 #include <mpfr.h>
 
-long double complex no_mapping(long double complex Z);
+long double complex no_mapping(mpfr_t *Z, const mpfr_t *c, mpfr_t *param, mpfr_t *temp);
 
 
 void mandelbrot(mpfr_t *Z, const mpfr_t *c, mpfr_t *param, mpfr_t *temp);
 
 void ship(mpfr_t *Z, const mpfr_t *c, mpfr_t *param, mpfr_t *temp);
 
-long double complex julia(long double complex Z, const long double complex c);
+void julia(mpfr_t *Z, const mpfr_t *c, mpfr_t *param, mpfr_t *temp);
 
-int8_t mandelbrot_optimiser(const long double complex c);
+int8_t mandelbrot_optimiser(const mpfr_t *c, mpfr_t *param, mpfr_t *temp);
 
-int8_t no_optimiser(const long double complex Z);
+int8_t no_optimiser(const mpfr_t *c, mpfr_t *param, mpfr_t *temp);

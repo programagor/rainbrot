@@ -57,7 +57,7 @@ int main (int argc,char** argv)
   if(v) setbuf(stdout, NULL); /* to allow incomplete lines */
   srand(args.seed);
   void (*function)(mpfr_t *Z, const mpfr_t *c, mpfr_t *param, mpfr_t *temp);
-  int8_t (*optimiser)(long double complex c);
+  int8_t (*optimiser)(const mpfr_t *c, mpfr_t *param, mpfr_t *temp);
   if(strcmp(args.function,"mandelbrot")==0)
     {
       function=mandelbrot;
