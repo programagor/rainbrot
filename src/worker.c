@@ -37,11 +37,29 @@ void* worker(void *arg_v)
   const long double b_std = arg->b_std;
   const long double a_mu = arg->a_mu;
   const long double b_mu = arg->b_mu;
-  long double complex (*const function)(long double complex Z, const long double complex c) = arg->function;
-  int8_t (*const optimiser)(const long double complex c) = arg->optimiser; /* 0 is no, 1 is yes, -1 is maybe */
+  void (*const function)(mpfr_t *Z, const mpfr_t *c, mpfr_t *param, mpfr_t *temp) = arg->function;
+  int8_t (*const optimiser)(const mpfr_t *c, mpfr_t *param, mpfr_t *temp) = arg->optimiser; /* 0 is no, 1 is yes, -1 is maybe */
+  const uint32_t dimensions = arg->dimensions;
+  const uint32_t temps = arg->temps;
+  const mpfr_prec_t precision = arg->precision;
 
   uint32_t l;
   for(l=1;arg->iter[l+1];l++); /* how many channels */
+  
+  /* Initialise numbers */
+  mpfr_t *Z=malloc(dimensions*sizeof(mpfr_t));
+  mpfr_t *c=malloc(dimensions*sizeof(mpfr_t));;
+  mpfr_t *temp=malloc(temps*sizeof(mpfr_t));;
+  
+  for(uint32_t i=0;i<dimensions;i++)
+    {
+      mpfr_init2(Z[i],precision);
+      mpfr_init2(c[i],precision);
+    }
+  for(uint32_t i=0;i<temps;i++)
+    {
+      mpfr_init2(temp[i],precision);
+    }
   
   //pthread_cleanup_push(worker_cleanup,arg_v);
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);

@@ -37,6 +37,9 @@ struct argw
   long double b_std;
   long double a_mu;
   long double b_mu;
+  uint32_t dimensions;
+  uint32_t temps;
+  mpfr_prec_t precision;
 };
 
 #endif
