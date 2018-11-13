@@ -18,6 +18,9 @@
 /* Thread control */
 #include <pthread.h>
 
+/* Arbitrary precision */
+#include <gmp.h>
+
 #include "arguments.h"
 #include "list_tools.h"
 #include "worker.h"

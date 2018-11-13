@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-std=c99 -Isrc -Wall -Wextra -pedantic -Ofast -pthread -lm -lgmp
+CFLAGS=-std=c99 -Isrc -Wall -Wextra -pedantic -Ofast -pthread -lm -lmpfr -lgmp
 
 all: bin/rainbrot-gen
 	rm bin/*.o
