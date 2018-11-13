@@ -31,7 +31,7 @@ struct argw
   uint64_t *iter;
   double bail;
   uint64_t runs;
-  long double complex (*function)(long double complex Z, const long double complex c);
+  void (*function)(mpfr_t *Z, const mpfr_t *c, mpfr_t *param, mpfr_t *temp);
   int8_t (*optimiser)(const long double complex c);
   long double a_std;
   long double b_std;

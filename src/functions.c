@@ -4,7 +4,7 @@
 
 #include <mpfr.h>
 
-void no_mapping(mpfr_t *Z, const mpfr_t *c, mpfr_t *temp)
+void no_mapping(mpfr_t *Z, const mpfr_t *c, mpfr_t *param, mpfr_t *temp)
 {
 
 }
@@ -12,7 +12,7 @@ void no_mapping(mpfr_t *Z, const mpfr_t *c, mpfr_t *temp)
 
 
 
-void mandelbrot(mpfr_t *Z, const mpfr_t *c, mpfr_t *temp)
+void mandelbrot(mpfr_t *Z, const mpfr_t *c, mpfr_t *param, mpfr_t *temp)
 {
   // requires 1 temp variable
   // Z=Z*Z+c
@@ -44,7 +44,7 @@ void mandelbrot(mpfr_t *Z, const mpfr_t *c, mpfr_t *temp)
   
 }
 
-long double complex ship(long double complex Z, const long double complex c)
+void ship(mpfr_t *Z, const mpfr_t *c, mpfr_t *param, mpfr_t *temp)
 {
   // Z=(abs(real(Z))+abs(imag(Z))*i)+C
   // C=a+bi
@@ -53,9 +53,10 @@ long double complex ship(long double complex Z, const long double complex c)
   // abs(c)^2+2*abs(c)*abs(d)*i-abs(d)^2+a+bi=
   // (a+abs(c)^2-abs(d)^2)+(b+2*abs(c)*abs(d))i
   
+  mpfr_abs(Z[0],Z[0],MPFR_RNDN);
+  mpfr_abs(Z[1],Z[1],MPFR_RNDN);
   
-  
-  return(cpowl(fabsl(creall(Z))+fabsl(cimagl(Z))*I,2)+c);
+  mandelbrot(Z, c, param, temp);
 }
 
 int8_t mandelbrot_optimiser(const long double complex Z)

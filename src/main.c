@@ -19,7 +19,7 @@
 #include <pthread.h>
 
 /* Arbitrary precision */
-#include <gmp.h>
+#include <mpfr.h>
 
 #include "arguments.h"
 #include "list_tools.h"
@@ -56,7 +56,7 @@ int main (int argc,char** argv)
   int v=args.verbose;
   if(v) setbuf(stdout, NULL); /* to allow incomplete lines */
   srand(args.seed);
-  long double complex (*function)(long double complex c, long double complex Z);
+  void (*function)(mpfr_t *Z, const mpfr_t *c, mpfr_t *param, mpfr_t *temp);
   int8_t (*optimiser)(long double complex c);
   if(strcmp(args.function,"mandelbrot")==0)
     {

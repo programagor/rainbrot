@@ -6,9 +6,9 @@
 long double complex no_mapping(long double complex Z);
 
 
-void mandelbrot(mpfr_t *Z, const mpfr_t *c, mpfr_t *temp);
+void mandelbrot(mpfr_t *Z, const mpfr_t *c, mpfr_t *param, mpfr_t *temp);
 
-long double complex ship      (long double complex Z, const long double complex c);
+void ship(mpfr_t *Z, const mpfr_t *c, mpfr_t *param, mpfr_t *temp);
 
 long double complex julia(long double complex Z, const long double complex c);
 

@@ -8,7 +8,7 @@
 #include <time.h>
 #include <sys/mman.h>
 
-#include <gmp.h>
+#include <mpfr.h>
 
 #define PI_2_I 3.141592653589793238462643383279502884L*2.0*I
 
