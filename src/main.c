@@ -289,7 +289,7 @@ int main (int argc,char** argv)
   fprintf(stdout,"Total hits: %lu\n",hits[0]);
   
   if(v)
-    fprintf(stdout,"Task done, quitting\n");
+    fprintf(stdout,"Task done, cleaning up...\n");
   /* Clean up */
 
   pthread_mutex_destroy(&lock_rand);
@@ -300,10 +300,16 @@ int main (int argc,char** argv)
           pthread_mutex_destroy(&locks[i][x]);
         }
       free(locks[i]);
+      if(v)
+        fprintf(stdout,"Syncing file %d... ",i);
       msync(maps[i],fsize,MS_SYNC);
       munmap(maps[i],fsize);
       close(files[i]);
+      if(v)
+        fprintf(stdout,"done.\n ");
     }
   free(args.iter);
+  if(v)
+    fprintf(stdout,"Quitting\n");
 
 }

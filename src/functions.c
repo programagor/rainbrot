@@ -17,7 +17,7 @@ long double complex mandelbrot(long double complex Z, const long double complex 
 
 long double complex ship(long double complex Z, const long double complex c)
 {
-  return(cpowl(cabsl(creall(Z))+cabsl(cimagl(Z))*I,2)+c);
+  return(cpowl(fabsl(creall(Z))+fabsl(cimagl(Z))*I,2)+c);
 }
 
 int8_t mandelbrot_optimiser(const long double complex Z)
