@@ -48,8 +48,8 @@ void* worker(void *arg_v)
   
   /* Initialise numbers */
   mpfr_t *Z=malloc(dimensions*sizeof(mpfr_t));
-  mpfr_t *c=malloc(dimensions*sizeof(mpfr_t));;
-  mpfr_t *temp=malloc(temps*sizeof(mpfr_t));;
+  mpfr_t *c=malloc(dimensions*sizeof(mpfr_t));
+  mpfr_t *temp=malloc(temps*sizeof(mpfr_t));
   
   for(uint32_t i=0;i<dimensions;i++)
     {
@@ -67,7 +67,6 @@ void* worker(void *arg_v)
   while(1)
     {
       /* Generate a point that is outside of set */
-      long double complex c,Z;
       uint64_t target_iter;
       uint64_t run;
       do
@@ -76,11 +75,10 @@ void* worker(void *arg_v)
           /* Use Box-Muller algorithm to get two normally distributed numbers */
           /* and then make one complex number from them */
           
-          int U1,U2;
           /* rand is not thread safe, needs locking */
           pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
           pthread_mutex_lock(arg->lock_rand);
-          mpfr_grandom();
+          mpfr_grandom(Z[0],Z[1],*arg->prng_state,MPFR_RNDN);
           run=++*(arg->counter);
           pthread_mutex_unlock(arg->lock_rand);
           pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);

@@ -5,6 +5,8 @@
 #include <complex.h>
 #include <pthread.h>
 
+#include <mpfr.h>
+
 void* worker(void *arg);
 
 uint64_t preiterator(
@@ -40,6 +42,7 @@ struct argw
   uint32_t dimensions;
   uint32_t temps;
   mpfr_prec_t precision;
+  gmp_randstate_t *prng_state;
 };
 
 #endif

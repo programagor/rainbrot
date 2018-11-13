@@ -57,6 +57,8 @@ int main (int argc,char** argv)
   int v=args.verbose;
   if(v) setbuf(stdout, NULL); /* to allow incomplete lines */
   srand(args.seed);
+  gmp_randstate_t prng_state;
+  gmp_randinit_mt(prng_state);
   void (*function)(mpfr_t *Z, const mpfr_t *c, mpfr_t *param, mpfr_t *temp);
   int8_t (*optimiser)(const mpfr_t *c, mpfr_t *param, mpfr_t *temp);
   uint32_t dimensions;
@@ -270,7 +272,8 @@ int main (int argc,char** argv)
           args.b_mu,
           dimensions,
           temps,
-          args.precision
+          args.precision,
+          &prng_state
         };
       pthread_create(&thr[t],NULL,worker,(void*)&argw[t]);
       if(v)
