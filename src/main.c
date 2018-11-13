@@ -47,9 +47,10 @@ int main (int argc,char** argv)
   args.bail = 40;
   args.runs = 10000000L;
   args.threads = 4;
-  args.seed=time(NULL);
-  args.function="mandelbrot";
-  args.a_std=-1;
+  args.seed = time(NULL);
+  args.function = "mandelbrot";
+  args.a_std = -1;
+  args.precision = 256;
 
   /* Parse command-line arguments */
   argp_parse(&argp, argc, argv, 0, 0, &args);
@@ -58,20 +59,28 @@ int main (int argc,char** argv)
   srand(args.seed);
   void (*function)(mpfr_t *Z, const mpfr_t *c, mpfr_t *param, mpfr_t *temp);
   int8_t (*optimiser)(const mpfr_t *c, mpfr_t *param, mpfr_t *temp);
+  uint32_t dimensions;
+  uint32_t temps;
   if(strcmp(args.function,"mandelbrot")==0)
     {
       function=mandelbrot;
       optimiser=mandelbrot_optimiser;
+      dimensions=2;
+      temps=3;
     }
   else if(strcmp(args.function,"ship")==0)
     {
       function=ship;
       optimiser=no_optimiser;
+      dimensions=2;
+      temps=3;
     }
   else if(strcmp(args.function,"julia")==0)
     {
       function=julia;
       optimiser=no_optimiser;
+      dimensions=2;
+      temps=3;
     }
   else
     {
@@ -258,7 +267,10 @@ int main (int argc,char** argv)
           args.a_std,
           args.b_std,
           args.a_mu,
-          args.b_mu
+          args.b_mu,
+          dimensions,
+          temps,
+          args.precision
         };
       pthread_create(&thr[t],NULL,worker,(void*)&argw[t]);
       if(v)

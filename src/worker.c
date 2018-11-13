@@ -147,9 +147,9 @@ void* worker(void *arg_v)
 
 uint64_t preiterator
 (
-  const long double complex c,
-  long double complex (*const function)(long double complex Z, const long double complex c),
-  int8_t (*const optimiser)(const long double complex c),
+  const mpfr_t *c,
+  void (*const function)(mpfr_t *Z, const mpfr_t *c, mpfr_t *param, mpfr_t *temp),
+  int8_t (*const optimiser)(const mpfr_t *c, mpfr_t *param, mpfr_t *temp),
   const uint64_t iter_min,
   const uint64_t iter_max,
   const double bail

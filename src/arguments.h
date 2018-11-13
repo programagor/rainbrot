@@ -25,6 +25,7 @@ struct arguments
   long double b_std;
   long double a_mu;
   long double b_mu;
+  uint64_t precision;
 };
 
 extern struct argp argp;

@@ -4,6 +4,8 @@
 #include <string.h>
 #include <math.h>
 
+#include <mpfr.h>
+
 #include "arguments.h"
 #include "list_tools.h"
 
@@ -23,6 +25,7 @@ static struct argp_option options[] =
   {"seed",'x',"SEED",0,"Starting seed for the random number generator",1},
   {"function",'f',"{mandelbrot,ship,custom}",0,"",1},
   {"distribution",'d',"RE_MU,RE_STD,IM_MU,IM_STD",0,"Parameters of Gaussian distribution of starting points",1},
+  {"precision",'p',"PRECISION",0,"Bits of precision for floating-point calculations",1},
   {0}
 };
 
@@ -106,6 +109,14 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
       argp_usage(state);
     else
       arguments->a_mu=fabsl(arguments->a_mu);
+    break;
+  case 'p':
+    // TODO: validate that the value is between MPFR_PREC_MIN and MPFR_PREC_MAX
+    if(1!=sscanf(arg,"%lu",
+                 &(arguments->precision))  ||
+        arguments->precision<MPFR_PREC_MIN ||
+        arguments->precision>MPFR_PREC_MAX)
+      argp_usage(state);
     break;
     //  case ARGP_KEY_END:
     //    if (state->arg_num < 0)

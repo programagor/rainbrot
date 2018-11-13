@@ -8,9 +8,9 @@
 void* worker(void *arg);
 
 uint64_t preiterator(
-		     long double complex c,
-		     long double complex (*function)(long double complex c, long double complex Z),
-		     int8_t (*optimiser)(long double complex c),
+		     const mpfr_t *c,
+		     void (*function)(mpfr_t *Z, const mpfr_t *c, mpfr_t *param, mpfr_t *temp),
+		     int8_t (*optimiser)(const mpfr_t *c, mpfr_t *param, mpfr_t *temp),
 		     uint64_t iter_min,
 		     uint64_t iter_max,
 		     double bail);
