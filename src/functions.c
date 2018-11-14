@@ -2,7 +2,7 @@
 
 #include <mpfr.h>
 
-void no_mapping(mpfr_t *Z, mpfr_t *c, mpfr_t *param, mpfr_t *temp)
+void no_mapping(mpfr_t *Z __attribute__((unused)), mpfr_t *c __attribute__((unused)), mpfr_t *param __attribute__((unused)), mpfr_t *temp __attribute__((unused)))
 {
 
 }
@@ -10,7 +10,7 @@ void no_mapping(mpfr_t *Z, mpfr_t *c, mpfr_t *param, mpfr_t *temp)
 
 
 
-void mandelbrot(mpfr_t *Z, mpfr_t *c, mpfr_t *param, mpfr_t *temp)
+void mandelbrot(mpfr_t *Z, mpfr_t *c, mpfr_t *param __attribute__((unused)), mpfr_t *temp)
 {
   // requires 1 temp variable
   // Z=Z*Z+c
@@ -51,31 +51,33 @@ void ship(mpfr_t *Z, mpfr_t *c, mpfr_t *param, mpfr_t *temp)
   mandelbrot(Z, c, param, temp);
 }
 
-int8_t mandelbrot_optimiser(mpfr_t *c, mpfr_t *param, mpfr_t *temp)
+int8_t mandelbrot_optimiser(mpfr_t *c, mpfr_t *param __attribute__((unused)), mpfr_t *temp)
 {
   
   /* Outside of the 2-disk */
-  if(cabs(Z)>2) return(0);
+  mpfr_mul(temp[0],c[0],c[0],MPFR_RNDN);
+  mpfr_fma(temp[0],c[1],c[1],temp[0],MPFR_RNDN);
+  if(mpfr_cmp_ui(temp[0], 2)>0) return(0);
   
   /* Inside te cardioid */
-  long double x=creall(Z);
-  long double y=cimagl(Z);
-  long double p=sqrtl(powl(x-0.25L,2)+powl(y,2));
-  if(x<p-2*powl(p,2)+0.25L) return(1);
+  //long double x=creall(Z);
+  //long double y=cimagl(Z);
+  //long double p=sqrtl(powl(x-0.25L,2)+powl(y,2));
+  //if(x<p-2*powl(p,2)+0.25L) return(1);
   /* Inside the 2-period bulb */
-  if(powl(x+1,2)+powl(y,2)<0.0625L) return(1);
+  //if(powl(x+1,2)+powl(y,2)<0.0625L) return(1);
   
   return(-1);
 }
 
-long double complex julia(long double complex Z)
+void julia(mpfr_t *Z __attribute__((unused)), mpfr_t *c __attribute__((unused)), mpfr_t *param __attribute__((unused)), mpfr_t *temp __attribute__((unused)))
 {
-  return(Z*Z+(0.687 + 0.312*I));
+  //return(Z*Z+(0.687 + 0.312*I));
 }
 
 
 /* Used as sink, always returns UNCERTAIN = no optimisation */
-int8_t no_optimiser()
+int8_t no_optimiser(mpfr_t *c __attribute__((unused)), mpfr_t *param __attribute__((unused)), mpfr_t *temp __attribute__((unused)))
 {
   return(-1);
 }

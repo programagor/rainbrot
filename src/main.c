@@ -90,7 +90,31 @@ int main (int argc,char** argv)
       fprintf(stderr,"Couldn't load file functions/%s.o (not implemented)\n",args.function);
       return(1);
     }
+    
+  /* Bailout value */
+  mpfr_t bail;
+  mpfr_init2(bail,args.precision);
+  mpfr_set_ld(bail,args.bail,MPFR_RNDN);
   /* If standard deviation and mean of the starting points isn't specified, default to the center of window */
+  mpfr_t *prng_std=malloc(dimensions*sizeof(mpfr_t));
+  mpfr_t *prng_mu=malloc(dimensions*sizeof(mpfr_t));
+  
+  for(uint32_t i=0;i<dimensions;i++)
+    {
+      mpfr_init2(prng_std[i],args.precision);
+      mpfr_init2(prng_mu[i],args.precision);
+      // TODO: Proper parsing of PRNG distribution
+      if(args.a_std<0)
+        {
+          mpfr_set_d(prng_mu[i],1,MPFR_RNDN);
+        }
+      else
+        {
+          mpfr_set_d(prng_mu[i],args.a_std,MPFR_RNDN);
+        }
+      mpfr_set_d(prng_mu[i],0,MPFR_RNDN);
+    }
+
   if(args.a_std<0)
     {
       args.a_std=(args.re_max-args.re_min);
@@ -262,14 +286,12 @@ int main (int argc,char** argv)
           args.im_min,
           args.im_max,
           args.iter,
-          args.bail,
+          &bail,
           args.runs,
           function,
           optimiser,
-          args.a_std,
-          args.b_std,
-          args.a_mu,
-          args.b_mu,
+          prng_std,
+          prng_mu,
           dimensions,
           temps,
           args.precision,

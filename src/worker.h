@@ -16,9 +16,10 @@ uint64_t preiterator(
           int8_t (*optimiser)(mpfr_t *c, mpfr_t *param, mpfr_t *temp),
           uint64_t iter_min,
           uint64_t iter_max,
-          double bail,
+          mpfr_t bail,
           mpfr_t *param,
-          mpfr_t *temp);
+          mpfr_t *temp,
+          uint32_t dimentions);
 
 struct argw
 {
@@ -34,14 +35,12 @@ struct argw
   double im_min;
   double im_max;
   uint64_t *iter;
-  double bail;
+  mpfr_t *bail;
   uint64_t runs;
   void (*function)(mpfr_t *Z, mpfr_t *c, mpfr_t *param, mpfr_t *temp);
   int8_t (*optimiser)(mpfr_t *c, mpfr_t *param, mpfr_t *temp);
-  long double a_std;
-  long double b_std;
-  long double a_mu;
-  long double b_mu;
+  mpfr_t *prng_std;
+  mpfr_t *prng_mu;
   uint32_t dimensions;
   uint32_t temps;
   mpfr_prec_t precision;

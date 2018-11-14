@@ -31,12 +31,7 @@ void* worker(void *arg_v)
   const double re_max = arg->re_max;
   const double im_min = arg->im_min;
   const double im_max = arg->im_max;
-  const double bail = arg->bail;
   const uint64_t runs = arg->runs;
-  const long double a_std = arg->a_std;
-  const long double b_std = arg->b_std;
-  const long double a_mu = arg->a_mu;
-  const long double b_mu = arg->b_mu;
   void (*function)(mpfr_t *Z, mpfr_t *c, mpfr_t *param, mpfr_t *temp) = arg->function;
   int8_t (*optimiser)(mpfr_t *c, mpfr_t *param, mpfr_t *temp) = arg->optimiser; /* 0 is no, 1 is yes, -1 is maybe */
   const uint32_t dimensions = arg->dimensions;
@@ -109,14 +104,18 @@ void* worker(void *arg_v)
               pthread_exit(NULL);
             }
           
-          /* Scale c axis-wise (non-comforming mapping) */
+          /* Scale c per axis (non-comforming mapping) */
           //c=(creall(c)*a_std+a_mu)+((long double complex)I)*(cimagl(c)*b_std+b_mu);
+          for(uint32_t i=0;i+1<dimensions;i++)
+            {
+              mpfr_fma(c[i],c[i],arg->prng_std[i],arg->prng_mu[i],MPFR_RNDN);
+            }
           
           for(uint32_t i=0;i<dimensions;i++)
             {
               mpfr_set(Z[i],c[i],MPFR_RNDN);
             }
-          target_iter=preiterator(Z,c,function,optimiser,arg->iter[0],arg->iter[l],bail,NULL,temp);
+          target_iter=preiterator(Z,c,function,optimiser,arg->iter[0],arg->iter[l],*arg->bail,NULL,temp,dimensions);
           
           pthread_testcancel();
           
@@ -140,9 +139,13 @@ void* worker(void *arg_v)
           
           
           /* increment buffer */
-          idx_x=round((creall(Z) - re_min)*( re_size -1)/(re_max-re_min));
-          idx_y=im_size - round((cimagl(Z) - im_min)*( im_size -1)/(im_max-im_min));
-                  
+          long double Z_real=mpfr_get_ld (Z[0],MPFR_RNDN);
+          long double Z_imag=mpfr_get_ld (Z[1],MPFR_RNDN);
+          idx_x=round((Z_real - re_min)*( re_size -1)/(re_max-re_min));
+          idx_y=im_size - round((Z_imag - im_min)*( im_size -1)/(im_max-im_min));
+          //TODO: implement cameras with proper multidimensional mpfr support
+          
+          
           if(idx_x>=0 && idx_x < re_size && idx_y>=0 && idx_y < im_size)
             {
               pthread_mutex_lock(&arg->locks[k][idx_x]);
@@ -166,9 +169,10 @@ uint64_t preiterator
   int8_t (*optimiser)(mpfr_t *c, mpfr_t *param, mpfr_t *temp),
   const uint64_t iter_min,
   const uint64_t iter_max,
-  const double bail,
+  mpfr_t bail,
   mpfr_t *param,
-  mpfr_t *temp
+  mpfr_t *temp,
+  uint32_t dimensions
 )
 {
   const int8_t res=optimiser(c, param, temp);
@@ -179,12 +183,16 @@ uint64_t preiterator
   /* res== 0: We know c is outside, but does it last long enough? */
   /* res==-1: We don't know whether c is inside or outside, need full iteration cycle */
   const uint64_t iter=(res==0?iter_min:iter_max);
-  uint64_t i;
   
-  for(i=0;i<iter;i++)
+  for(uint64_t i=0;i<iter;i++)
     {
       function(Z, c, param, temp);
-      if(cabsl(Z)>bail)
+      mpfr_set_d(temp[0],0,MPFR_RNDN);
+      for(uint32_t j=0;j<dimensions;j++)
+        {
+          mpfr_fma(temp[0],Z[j],Z[j],temp[0],MPFR_RNDN);
+        }
+      if(mpfr_cmp (temp[0], bail)>0)
         {
           return(i<iter_min?0:i);
         }
