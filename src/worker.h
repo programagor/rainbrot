@@ -10,12 +10,15 @@
 void* worker(void *arg);
 
 uint64_t preiterator(
-		     const mpfr_t *c,
-		     void (*function)(mpfr_t *Z, const mpfr_t *c, mpfr_t *param, mpfr_t *temp),
-		     int8_t (*optimiser)(const mpfr_t *c, mpfr_t *param, mpfr_t *temp),
-		     uint64_t iter_min,
-		     uint64_t iter_max,
-		     double bail);
+          mpfr_t *Z,
+          mpfr_t *c,
+          void (*function)(mpfr_t *Z, mpfr_t *c, mpfr_t *param, mpfr_t *temp),
+          int8_t (*optimiser)(mpfr_t *c, mpfr_t *param, mpfr_t *temp),
+          uint64_t iter_min,
+          uint64_t iter_max,
+          double bail,
+          mpfr_t *param,
+          mpfr_t *temp);
 
 struct argw
 {
@@ -33,8 +36,8 @@ struct argw
   uint64_t *iter;
   double bail;
   uint64_t runs;
-  void (*function)(mpfr_t *Z, const mpfr_t *c, mpfr_t *param, mpfr_t *temp);
-  int8_t (*optimiser)(const mpfr_t *c, mpfr_t *param, mpfr_t *temp);
+  void (*function)(mpfr_t *Z, mpfr_t *c, mpfr_t *param, mpfr_t *temp);
+  int8_t (*optimiser)(mpfr_t *c, mpfr_t *param, mpfr_t *temp);
   long double a_std;
   long double b_std;
   long double a_mu;

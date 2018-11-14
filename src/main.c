@@ -59,8 +59,8 @@ int main (int argc,char** argv)
   srand(args.seed);
   gmp_randstate_t prng_state;
   gmp_randinit_mt(prng_state);
-  void (*function)(mpfr_t *Z, const mpfr_t *c, mpfr_t *param, mpfr_t *temp);
-  int8_t (*optimiser)(const mpfr_t *c, mpfr_t *param, mpfr_t *temp);
+  void (*function)(mpfr_t *Z,mpfr_t *c, mpfr_t *param, mpfr_t *temp);
+  int8_t (*optimiser)(mpfr_t *c, mpfr_t *param, mpfr_t *temp);
   uint32_t dimensions;
   uint32_t temps;
   if(strcmp(args.function,"mandelbrot")==0)

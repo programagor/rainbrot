@@ -2,7 +2,7 @@
 
 #include <mpfr.h>
 
-void no_mapping(mpfr_t *Z, const mpfr_t *c, mpfr_t *param, mpfr_t *temp)
+void no_mapping(mpfr_t *Z, mpfr_t *c, mpfr_t *param, mpfr_t *temp)
 {
 
 }
@@ -10,7 +10,7 @@ void no_mapping(mpfr_t *Z, const mpfr_t *c, mpfr_t *param, mpfr_t *temp)
 
 
 
-void mandelbrot(mpfr_t *Z, const mpfr_t *c, mpfr_t *param, mpfr_t *temp)
+void mandelbrot(mpfr_t *Z, mpfr_t *c, mpfr_t *param, mpfr_t *temp)
 {
   // requires 1 temp variable
   // Z=Z*Z+c
@@ -42,7 +42,7 @@ void mandelbrot(mpfr_t *Z, const mpfr_t *c, mpfr_t *param, mpfr_t *temp)
   
 }
 
-void ship(mpfr_t *Z, const mpfr_t *c, mpfr_t *param, mpfr_t *temp)
+void ship(mpfr_t *Z, mpfr_t *c, mpfr_t *param, mpfr_t *temp)
 {
   
   mpfr_abs(Z[0],Z[0],MPFR_RNDN);
@@ -51,7 +51,7 @@ void ship(mpfr_t *Z, const mpfr_t *c, mpfr_t *param, mpfr_t *temp)
   mandelbrot(Z, c, param, temp);
 }
 
-int8_t mandelbrot_optimiser(const mpfr_t *c, mpfr_t *param, mpfr_t *temp)
+int8_t mandelbrot_optimiser(mpfr_t *c, mpfr_t *param, mpfr_t *temp)
 {
   
   /* Outside of the 2-disk */

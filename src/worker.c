@@ -37,8 +37,8 @@ void* worker(void *arg_v)
   const long double b_std = arg->b_std;
   const long double a_mu = arg->a_mu;
   const long double b_mu = arg->b_mu;
-  void (*const function)(mpfr_t *Z, const mpfr_t *c, mpfr_t *param, mpfr_t *temp) = arg->function;
-  int8_t (*const optimiser)(const mpfr_t *c, mpfr_t *param, mpfr_t *temp) = arg->optimiser; /* 0 is no, 1 is yes, -1 is maybe */
+  void (*function)(mpfr_t *Z, mpfr_t *c, mpfr_t *param, mpfr_t *temp) = arg->function;
+  int8_t (*optimiser)(mpfr_t *c, mpfr_t *param, mpfr_t *temp) = arg->optimiser; /* 0 is no, 1 is yes, -1 is maybe */
   const uint32_t dimensions = arg->dimensions;
   const uint32_t temps = arg->temps;
   const mpfr_prec_t precision = arg->precision;
@@ -60,6 +60,7 @@ void* worker(void *arg_v)
     {
       mpfr_init2(temp[i],precision);
     }
+  // TODO: cleanup
   
   //pthread_cleanup_push(worker_cleanup,arg_v);
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
@@ -82,11 +83,7 @@ void* worker(void *arg_v)
           run=++*(arg->counter);
           pthread_mutex_unlock(arg->lock_rand);
           pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-          if(run>=runs)
-            {
-              /* We're done, quitting thread */
-              pthread_exit(NULL);
-            }
+          
           if(fmod(run,runs/100.0)<1)
             {
               char timestr[20];
@@ -94,14 +91,22 @@ void* worker(void *arg_v)
               strftime (timestr, 100, "%Y-%m-%d %H:%M:%S", localtime (&now));
               printf("[%s] Run: %10lu/%10lu (%3.0f%%)\n",timestr,run,runs,run*100.0/runs);
             }
-          /* Muller-Box Algorithm */
-          c=csqrtl(-2.0*clogl(U1*((double)1.0/RAND_MAX)))*cexpl(PI_2_I*(U2*((double)1.0/RAND_MAX)));
-          /* c now has Gaussian distribution (on the Gaussian plane) */
-              
-          /* Scale axis-wise (non-comforming mapping) */
-          c=(creall(c)*a_std+a_mu)+((long double complex)I)*(cimagl(c)*b_std+b_mu);
+            
           
-          target_iter=preiterator(c,function,optimiser,arg->iter[0],arg->iter[l],bail);
+          if(run>=runs)
+            {
+              /* We're done, quitting thread */
+              pthread_exit(NULL);
+            }
+          
+          /* Scale c axis-wise (non-comforming mapping) */
+          //c=(creall(c)*a_std+a_mu)+((long double complex)I)*(cimagl(c)*b_std+b_mu);
+          
+          for(uint32_t i=0;i<dimensions;i++)
+            {
+              mpfr_set(Z[i],c[i],MPFR_RNDN);
+            }
+          target_iter=preiterator(Z,c,function,optimiser,arg->iter[0],arg->iter[l],bail,NULL,temp);
           
           pthread_testcancel();
           
@@ -121,7 +126,7 @@ void* worker(void *arg_v)
       pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
       for(uint64_t i=0;i<target_iter;i++)
         {
-          Z=function(Z,c); /* Iterate */
+          function(Z, c, NULL, temp); /* Iterate */
           
           
           /* increment buffer */
@@ -145,15 +150,18 @@ void* worker(void *arg_v)
 
 uint64_t preiterator
 (
-  const mpfr_t *c,
-  void (*const function)(mpfr_t *Z, const mpfr_t *c, mpfr_t *param, mpfr_t *temp),
-  int8_t (*const optimiser)(const mpfr_t *c, mpfr_t *param, mpfr_t *temp),
+  mpfr_t *Z,
+  mpfr_t *c,
+  void (*function)(mpfr_t Z[], mpfr_t c[], mpfr_t *param, mpfr_t *temp),
+  int8_t (*optimiser)(mpfr_t *c, mpfr_t *param, mpfr_t *temp),
   const uint64_t iter_min,
   const uint64_t iter_max,
-  const double bail
+  const double bail,
+  mpfr_t *param,
+  mpfr_t *temp
 )
 {
-  const int8_t res=optimiser(c);
+  const int8_t res=optimiser(c, param, temp);
   if(res==1)
     {
       return(0); /* We know c is inside, can return */
@@ -162,10 +170,10 @@ uint64_t preiterator
   /* res==-1: We don't know whether c is inside or outside, need full iteration cycle */
   const uint64_t iter=(res==0?iter_min:iter_max);
   uint64_t i;
-  long double complex Z=c;
+  
   for(i=0;i<iter;i++)
     {
-      Z=function(Z,c);
+      function(Z, c, param, temp);
       if(cabsl(Z)>bail)
         {
           return(i<iter_min?0:i);
