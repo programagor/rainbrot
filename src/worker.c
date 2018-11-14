@@ -79,7 +79,17 @@ void* worker(void *arg_v)
           /* rand is not thread safe, needs locking */
           pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
           pthread_mutex_lock(arg->lock_rand);
-          mpfr_grandom(Z[0],Z[1],*arg->prng_state,MPFR_RNDN);
+          for(uint32_t i=0;i+1<dimensions;i+=2)
+            {
+              if(i+1==dimensions)
+                {
+                  mpfr_grandom(Z[i],NULL,*arg->prng_state,MPFR_RNDN);
+                }
+              else
+                {
+                  mpfr_grandom(Z[i],Z[1],*arg->prng_state,MPFR_RNDN);
+                }
+            }
           run=++*(arg->counter);
           pthread_mutex_unlock(arg->lock_rand);
           pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
