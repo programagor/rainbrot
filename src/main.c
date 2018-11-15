@@ -106,11 +106,11 @@ int main (int argc,char** argv)
       // TODO: Proper parsing of PRNG distribution
       if(args.a_std<0)
         {
-          mpfr_set_d(prng_mu[i],1,MPFR_RNDN);
+          mpfr_set_d(prng_std[i],1,MPFR_RNDN);
         }
       else
         {
-          mpfr_set_d(prng_mu[i],args.a_std,MPFR_RNDN);
+          mpfr_set_d(prng_std[i],args.a_std,MPFR_RNDN);
         }
       mpfr_set_d(prng_mu[i],0,MPFR_RNDN);
     }
