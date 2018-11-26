@@ -27,7 +27,7 @@ void mandelbrot(mpfr_t *Z, mpfr_t *c, mpfr_t *param __attribute__((unused)), mpf
   //mpfr_add(temp[0],temp[0],c[0],0);
   
   // 2.1. temp[0]=Z[1]*Z[1]-c[0]
-  mpfr_fms(temp[0],Z[1],Z[1],Z[0],MPFR_RNDN);
+  mpfr_fms(temp[0],Z[1],Z[1],c[0],MPFR_RNDN);
   // 2.2. temp[0]=Z[0]*Z[0]-temp[0]
   mpfr_fms(temp[0],Z[0],Z[0],temp[0],MPFR_RNDN);
   

@@ -57,9 +57,6 @@ void* worker(void *arg_v)
     }
   // TODO: cleanup
   
-  mpfr_set_si(temp[0],-37,MPFR_RNDN);
-  mpfr_printf("temp=%e\n",*temp[0]);
-  
   //pthread_cleanup_push(worker_cleanup,arg_v);
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
   /* Run until number of runs is reached */
@@ -71,9 +68,6 @@ void* worker(void *arg_v)
       do
         {
           
-          /* Use Box-Muller algorithm to get two normally distributed numbers */
-          /* and then make one complex number from them */
-          
           /* rand is not thread safe, needs locking */
           pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
           pthread_mutex_lock(arg->lock_rand);
@@ -82,22 +76,21 @@ void* worker(void *arg_v)
               if(i+1==dimensions)
                 {
                   mpfr_grandom(c[i],NULL,*arg->prng_state,MPFR_RNDN);
-                  printf("c[%d]=(",i);
-                  mpfr_printf("%e)\n",c[i]);
+                  /*printf("c[%d]=(",i);
+                  mpfr_printf("%Re)\n",c[i]);*/
                 }
               else
                 {
                   mpfr_grandom(c[i],c[i+1],*arg->prng_state,MPFR_RNDN);
-                  printf("c[%d]=(",i);
-                  mpfr_printf("%e)\n",c[i]);
+                  /*printf("c[%d]=(",i);
+                  mpfr_printf("%Re)\n",c[i]);
                   printf("c[%d]=(",i+1);
-                  mpfr_printf("%e)\n",c[i+1]);
+                  mpfr_printf("%Re)\n",c[i+1]);*/
                 }
             }
           run=++*(arg->counter);
           pthread_mutex_unlock(arg->lock_rand);
           pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-      mpfr_printf("Trying:  (%e)+(%e)i\n",c[0],c[1]);
           
           if(fmod(run,runs/100.0)<1)
             {
@@ -113,7 +106,7 @@ void* worker(void *arg_v)
               /* We're done, quitting thread */
               pthread_exit(NULL);
             }
-      mpfr_printf("Trying:  (%e)+(%e)i\n",c[0],c[1]);
+      //mpfr_printf("Trying:  (%Re)+(%Re)i\n",c[0],c[1]);
           
           /* Scale c per axis (non-comforming mapping) */
           //c=(creall(c)*a_std+a_mu)+((long double complex)I)*(cimagl(c)*b_std+b_mu);
@@ -121,7 +114,7 @@ void* worker(void *arg_v)
             {
               mpfr_fma(c[i],c[i],arg->prng_std[i],arg->prng_mu[i],MPFR_RNDN);
             }
-      mpfr_printf("Scaling: (%e)+(%e)i\n",c[0],c[1]);
+      //mpfr_printf("Scaling: (%Re)+(%Re)i\n",c[0],c[1]);
           
           for(uint32_t i=0;i<dimensions;i++)
             {
@@ -133,7 +126,7 @@ void* worker(void *arg_v)
           
         }
       while(target_iter==0);
-      printf("Went iterating\n");
+      //printf("Went iterating\n");
       
       int64_t idx_x,idx_y; /* pixel coords */
       
@@ -200,7 +193,6 @@ uint64_t preiterator
   for(uint64_t i=0;i<iter;i++)
     {
       function(Z, c, param, temp);
-      mpfr_printf("(%e)+(%e)i\n",Z[0],Z[1]);
       mpfr_set_d(temp[0],0,MPFR_RNDN);
       for(uint32_t j=0;j<dimensions;j++)
         {
